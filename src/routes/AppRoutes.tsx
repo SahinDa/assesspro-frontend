@@ -4,6 +4,7 @@ import SignInView from '@/modules/auth/views/SignInView'
 import ForgotPasswordView from '@/modules/auth/views/ForgotPasswordView'
 import ResetPasswordView from '@/modules/auth/views/ResetPasswordView'
 import VerifyOtpView from '@/modules/auth/views/VerifyOtpView'
+import RoleSelectionView from '@/modules/users/views/RoleSelectionView'
 
 export default function AppRoutes() {
   return (
@@ -17,6 +18,8 @@ export default function AppRoutes() {
       <Route path="/verify-otp" element={<VerifyOtpView />} />
       <Route path="/forgot-password" element={<ForgotPasswordView />} />
       <Route path="/reset-password" element={<ResetPasswordView />} />
+
+      <Route path="/role-selection" element={<RoleSelectionView />} />
       
       {/* Fallback for undefined routes */}
       <Route path="*" element={<Navigate to="/signin" replace />} />
