@@ -33,8 +33,17 @@ export const resetPasswordSchema = z.object({
   path: ['confirmPassword'],
 })
 
+export const verifyOtpSchema = z.object({
+  email: z.string().email('Please provide a valid email address').min(1, 'Email is required'),
+  otp: z
+    .string()
+    .length(6, 'OTP must be exactly 6 digits')
+    .regex(/^\d+$/, 'OTP must contain only numbers'),
+})
+
 // This line creates the TypeScript type automatically from your Zod schema
 export type SignUpFormData = z.infer<typeof signUpSchema>
 export type SignInFormData = z.infer<typeof signInSchema>
 export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>
+export type VerifyOtpFormData = z.infer<typeof verifyOtpSchema>

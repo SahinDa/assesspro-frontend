@@ -3,6 +3,7 @@ import SignUpView from '@/modules/auth/views/SignUpView'
 import SignInView from '@/modules/auth/views/SignInView'
 import ForgotPasswordView from '@/modules/auth/views/ForgotPasswordView'
 import ResetPasswordView from '@/modules/auth/views/ResetPasswordView'
+import VerifyOtpView from '@/modules/auth/views/VerifyOtpView'
 
 export default function AppRoutes() {
   return (
@@ -13,6 +14,7 @@ export default function AppRoutes() {
       {/* Auth Routes */}
       <Route path="/signin" element={<SignInView />} />
       <Route path="/signup" element={<SignUpView />} />
+      <Route path="/verify-otp" element={<VerifyOtpView />} />
       <Route path="/forgot-password" element={<ForgotPasswordView />} />
       <Route path="/reset-password" element={<ResetPasswordView />} />
       

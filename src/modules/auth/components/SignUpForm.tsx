@@ -21,6 +21,7 @@ export default function SignUpForm() {
   const onSubmit = (data: SignUpFormData) => {
     console.log("Signup Form Data Submitted:", data)
     alert("Signup validation passed! Check console for data payload.")
+    navigate(`/verify-otp?email=${encodeURIComponent(data.email)}`)
   }
 
   return (
