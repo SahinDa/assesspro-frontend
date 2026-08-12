@@ -11,5 +11,11 @@ export const signUpSchema = z.object({
   path: ["confirmPassword"],
 })
 
+export const signInSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(1, 'Password is required'),
+})
+
 // This line creates the TypeScript type automatically from your Zod schema
 export type SignUpFormData = z.infer<typeof signUpSchema>
+export type SignInFormData = z.infer<typeof signInSchema>

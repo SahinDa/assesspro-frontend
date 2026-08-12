@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { UserPlus, Loader2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 export default function SignUpForm() {
+  const navigate = useNavigate()
   const {
     register,
     handleSubmit,
@@ -81,15 +83,16 @@ export default function SignUpForm() {
             )}
           </Button>
           
-          <div className="text-xs text-center text-slate-500">
+          <div className="text-xs text-center text-slate-500 flex items-center justify-center gap-1">
             Already have an account?{" "}
-            <button
+            <Button
               type="button"
-              onClick={() => alert("Sign In component coming soon!")}
-              className="text-slate-900 font-semibold hover:underline focus:outline-none"
+              variant="link"
+              onClick={() => navigate('/signin')}
+              className="h-auto p-0 text-slate-900 font-semibold hover:underline"
             >
               Sign In
-            </button>
+            </Button>
           </div>
         </CardFooter>
       </form>
