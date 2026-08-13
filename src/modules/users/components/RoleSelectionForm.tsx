@@ -23,7 +23,7 @@ export default function RoleSelectionForm() {
     if (data.role === UserRole.STUDENT) {
       navigate('/student/dashboard')
     } else {
-      navigate('/organization/dashboard')
+      navigate('/organization/setup')
     }
   }
 
