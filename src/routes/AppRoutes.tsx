@@ -6,7 +6,10 @@ import ResetPasswordView from '@/modules/auth/views/ResetPasswordView'
 import VerifyOtpView from '@/modules/auth/views/VerifyOtpView'
 import RoleSelectionView from '@/modules/users/views/RoleSelectionView'
 import OrganizationSetupView from '@/modules/organizations/views/OrganizationSetupView'
-import OrganizationDashboardView from '@/modules/organizations/views/OrganizationDashboardView'
+
+import DashboardView from '@/modules/dashboard/views/DashboardView'
+import AppLayout from '@/modules/layouts/AppLayout'
+import { UserRole } from '@/config/enums'
 
 export default function AppRoutes() {
   return (
@@ -23,8 +26,26 @@ export default function AppRoutes() {
 
       <Route path="/role-selection" element={<RoleSelectionView />} />
       <Route path="/organization/setup" element={<OrganizationSetupView />} />
-      <Route path="/dashboard/organization" element={<OrganizationDashboardView />}></Route>
+
       
+      {/* 1. Organization Dashboard */}
+      <Route path="/dashboard" element={<AppLayout role={UserRole.ORGANIZATION} />}>
+        <Route index element={<Navigate to="/dashboard/organization" replace />} />
+        <Route path="organization" element={<DashboardView role={UserRole.ORGANIZATION} />} />
+      </Route>
+
+      {/* 2. Student Dashboard */}
+      <Route path="/student" element={<AppLayout role={UserRole.STUDENT} />}>
+        <Route index element={<Navigate to="/student/dashboard" replace />} />
+        <Route path="dashboard" element={<DashboardView role={UserRole.STUDENT} />} />
+      </Route>
+
+      {/* 3. Super Admin Dashboard */}
+      <Route path="/admin" element={<AppLayout role={UserRole.ADMIN} />}>
+        <Route index element={<Navigate to="/admin/overview" replace />} />
+        <Route path="overview" element={<DashboardView role={UserRole.ADMIN} />} />
+      </Route>
+
       {/* Fallback for undefined routes */}
       <Route path="*" element={<Navigate to="/signin" replace />} />
     </Routes>
