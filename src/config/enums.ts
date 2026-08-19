@@ -7,3 +7,17 @@ export const UserRole = {
 
 // This extracts the type union (0 | 1 | 2 | 3) automatically
 export type UserRoleType = typeof UserRole[keyof typeof UserRole];
+
+export enum CorrectAnswer {
+  A = 1,
+  B = 2,
+  C = 3,
+  D = 4,
+}
+
+export enum NegativeMarkingOption {
+  ZERO = 0.0,
+  QUARTER = 0.25,
+  HALF = 0.5,
+  ONE = 1.0,
+}

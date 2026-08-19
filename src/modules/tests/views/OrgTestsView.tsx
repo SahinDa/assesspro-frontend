@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import TestFormModal from '../components/TestFormModal'
 import DeleteTestDialog from '../components/DeleteTestDialog'
+import OrgTestSetsView from './OrgTestSetsView'
 import type { TestFormData } from '../utils/testValidation'
 
 export interface TestItem {
@@ -41,7 +42,7 @@ const MOCK_TESTS: TestItem[] = [
     id: 'test-2',
     name: 'Algorithms & Data Structures',
     description: 'Assessments on dynamic programming, graph algorithms, trees, and minimum cost flow networks.',
-    setsCount: 6,
+    setsCount: 2,
   },
   {
     id: 'test-3',
@@ -59,8 +60,8 @@ const MOCK_TESTS: TestItem[] = [
 
 export default function OrgTestsView() {
   const [tests, setTests] = useState<TestItem[]>(MOCK_TESTS)
-  
-  // State for Create / Edit Form Modal
+  const [selectedTest, setSelectedTest] = useState<TestItem | null>(null)
+
   const [modalState, setModalState] = useState<{
     isOpen: boolean
     test: TestItem | null
@@ -69,10 +70,19 @@ export default function OrgTestsView() {
     test: null,
   })
 
-  // State for Delete Confirmation Modal
   const [deletingTest, setDeletingTest] = useState<TestItem | null>(null)
 
-  // Save handler (Handles both Create and Edit)
+  // 1. If a test is selected, render Test Sets View
+  if (selectedTest) {
+    return (
+      <OrgTestSetsView
+        testId={selectedTest.id}
+        testName={selectedTest.name}
+        onBack={() => setSelectedTest(null)}
+      />
+    )
+  }
+
   const handleSaveTest = (data: TestFormData, id?: string) => {
     if (id) {
       setTests((prev) =>
@@ -91,7 +101,6 @@ export default function OrgTestsView() {
     }
   }
 
-  // Delete handler (Executes only when confirmed in dialog)
   const handleConfirmDelete = (id: string) => {
     setTests((prev) => prev.filter((t) => t.id !== id))
     setDeletingTest(null)
@@ -123,7 +132,7 @@ export default function OrgTestsView() {
         )}
       </div>
 
-      {/* Empty State vs Grid */}
+      {/* Grid vs Empty State */}
       {tests.length === 0 ? (
         <div className="min-h-[50vh] flex items-center justify-center p-4">
           <div className="text-center space-y-4 max-w-sm w-full bg-white border border-slate-200/80 rounded-3xl p-8 shadow-xs">
@@ -151,7 +160,8 @@ export default function OrgTestsView() {
           {tests.map((test) => (
             <Card 
               key={test.id} 
-              className="group relative rounded-2xl border border-slate-200/80 bg-white hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-50/50 transition-all duration-200 flex flex-col justify-between overflow-hidden"
+              onClick={() => setSelectedTest(test)}
+              className="group relative rounded-2xl border border-slate-200/80 bg-white hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-50/50 transition-all duration-200 flex flex-col justify-between overflow-hidden cursor-pointer"
             >
               <div className="h-1.5 w-full bg-linear-to-r from-indigo-500 via-indigo-400 to-sky-400 opacity-80" />
 
@@ -170,33 +180,31 @@ export default function OrgTestsView() {
                     </Badge>
                   </div>
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button 
-                        type="button"
-                        className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer outline-none"
-                      >
+                  {/* 3-Dot menu with event propagation stopped */}
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer outline-none border-0 bg-transparent">
                         <MoreHorizontal className="h-4 w-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-36 rounded-xl p-1 shadow-lg border-slate-200 bg-white z-30">
-                      <DropdownMenuItem 
-                        onClick={() => setModalState({ isOpen: true, test })}
-                        className="text-xs font-medium gap-2 rounded-lg cursor-pointer py-2 text-slate-700 hover:bg-slate-50"
-                      >
-                        <Edit3 className="h-3.5 w-3.5 text-slate-400" />
-                        <span>Edit</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="my-1 bg-slate-100" />
-                      <DropdownMenuItem 
-                        onClick={() => setDeletingTest(test)}
-                        className="text-xs font-medium gap-2 rounded-lg text-rose-600 hover:bg-rose-50 cursor-pointer py-2"
-                      >
-                        <Trash2 className="h-3.5 w-3.5 text-rose-500" />
-                        <span>Delete</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-36 rounded-xl p-1 shadow-lg border-slate-200 bg-white z-30">
+                        <DropdownMenuItem 
+                          onClick={() => setModalState({ isOpen: true, test })}
+                          className="text-xs font-medium gap-2 rounded-lg cursor-pointer py-2 text-slate-700 hover:bg-slate-50"
+                        >
+                          <Edit3 className="h-3.5 w-3.5 text-slate-400" />
+                          <span>Edit</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="my-1 bg-slate-100" />
+                        <DropdownMenuItem 
+                          onClick={() => setDeletingTest(test)}
+                          className="text-xs font-medium gap-2 rounded-lg text-rose-600 hover:bg-rose-50 cursor-pointer py-2"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                          <span>Delete</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
 
                 <div className="space-y-1.5 flex-1">
@@ -210,8 +218,13 @@ export default function OrgTestsView() {
 
                 <div className="pt-2">
                   <Button
+                    type="button"
                     variant="outline"
-                    className="w-full h-9 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50/60 border-slate-200 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 flex items-center justify-between px-3.5 transition-all cursor-pointer group/btn"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedTest(test)
+                    }}
+                    className="w-full h-9 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50/70 border-slate-200 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 flex items-center justify-between px-3.5 transition-all cursor-pointer group/btn"
                   >
                     <span>Manage Test Sets</span>
                     <ArrowRight className="h-3.5 w-3.5 text-slate-400 group-hover/btn:text-white group-hover/btn:translate-x-0.5 transition-transform" />
@@ -223,7 +236,7 @@ export default function OrgTestsView() {
         </div>
       )}
 
-      {/* Form Modal for Create & Edit */}
+      {/* Form Modal */}
       <TestFormModal
         isOpen={modalState.isOpen}
         test={modalState.test}
@@ -231,7 +244,7 @@ export default function OrgTestsView() {
         onSubmit={handleSaveTest}
       />
 
-      {/* Delete Confirmation Alert Dialog */}
+      {/* Delete Dialog */}
       <DeleteTestDialog
         isOpen={Boolean(deletingTest)}
         test={deletingTest}
