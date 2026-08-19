@@ -27,14 +27,14 @@ export function Sidebar({ role }: SidebarProps) {
     : isOrg
     ? [
         { label: 'Dashboard', path: '/dashboard/organization', icon: LayoutDashboard },
-        { label: 'Tests & Modules', path: '/dashboard/tests', icon: FolderKanban },
+        { label: 'Tests', path: '/dashboard/tests', icon: FolderKanban },
         { label: 'Student Cohort', path: '/dashboard/students', icon: Users2 },
         { label: 'Leaderboards', path: '/dashboard/leaderboards', icon: Trophy },
         { label: 'Billing & Plan', path: '/dashboard/billing', icon: CreditCard },
       ]
     : [
         { label: 'My Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
-        { label: 'Test Modules', path: '/student/modules', icon: Layers },
+        { label: 'Tests', path: '/student/modules', icon: FolderKanban},
         { label: 'Performance', path: '/student/performance', icon: BarChart3 },
         { label: 'Leaderboard', path: '/student/leaderboard', icon: Trophy },
       ]
