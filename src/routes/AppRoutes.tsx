@@ -10,6 +10,7 @@ import OrganizationSetupView from '@/modules/organizations/views/OrganizationSet
 import DashboardView from '@/modules/dashboard/views/DashboardView'
 import AppLayout from '@/modules/layouts/AppLayout'
 import { UserRole } from '@/config/enums'
+import OrgTestsView from '@/modules/tests/views/OrgTestsView'
 
 export default function AppRoutes() {
   return (
@@ -32,6 +33,7 @@ export default function AppRoutes() {
       <Route path="/dashboard" element={<AppLayout role={UserRole.ORGANIZATION} />}>
         <Route index element={<Navigate to="/dashboard/organization" replace />} />
         <Route path="organization" element={<DashboardView role={UserRole.ORGANIZATION} />} />
+        <Route path="tests" element={<OrgTestsView />} />
       </Route>
 
       {/* 2. Student Dashboard */}
