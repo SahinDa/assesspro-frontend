@@ -28,7 +28,7 @@ export function Sidebar({ role }: SidebarProps) {
     ? [
         { label: 'Dashboard', path: '/dashboard/organization', icon: LayoutDashboard },
         { label: 'Tests', path: '/dashboard/tests', icon: FolderKanban },
-        { label: 'Student Cohort', path: '/dashboard/students', icon: Users2 },
+        { label: 'Students', path: '/dashboard/students', icon: Users2 },
         { label: 'Leaderboards', path: '/dashboard/leaderboards', icon: Trophy },
         { label: 'Billing & Plan', path: '/dashboard/billing', icon: CreditCard },
       ]
