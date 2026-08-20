@@ -8,6 +8,15 @@ export const UserRole = {
 // This extracts the type union (0 | 1 | 2 | 3) automatically
 export type UserRoleType = typeof UserRole[keyof typeof UserRole];
 
+export const JoinRequestStatus = {
+  PENDING: 0,
+  REJECTED: 1,
+  APPROVED: 2,
+} as const;
+
+// Extracts the union type: 0 | 1 | 2
+export type JoinRequestStatusType = typeof JoinRequestStatus[keyof typeof JoinRequestStatus]
+
 export enum CorrectAnswer {
   A = 1,
   B = 2,
