@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { lazy } from 'react'
 import SignUpView from '@/modules/auth/views/SignUpView'
 import SignInView from '@/modules/auth/views/SignInView'
 import ForgotPasswordView from '@/modules/auth/views/ForgotPasswordView'
@@ -12,6 +13,7 @@ import AppLayout from '@/modules/layouts/AppLayout'
 import { UserRole } from '@/config/enums'
 import OrgTestsView from '@/modules/tests/views/OrgTestsView'
 import OrgStudentsView from '@/modules/students/views/OrgStudentsView'
+const BookmarksView = lazy(() => import('@/modules/bookmarks/views/BookmarksView'))
 
 export default function AppRoutes() {
   return (
@@ -36,6 +38,7 @@ export default function AppRoutes() {
         <Route path="organization" element={<DashboardView role={UserRole.ORGANIZATION} />} />
         <Route path="tests" element={<OrgTestsView />} />
         <Route path="students" element={<OrgStudentsView />} />
+        <Route path="bookmarks" element={<BookmarksView />} />
       </Route>
 
       {/* 2. Student Dashboard */}

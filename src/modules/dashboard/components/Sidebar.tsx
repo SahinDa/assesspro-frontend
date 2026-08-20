@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { 
   LayoutDashboard, FolderKanban, Trophy, CreditCard, 
-  Building2, Users2, ShieldCheck, Settings, LogOut,
+  Building2, Users2, ShieldCheck, Settings, LogOut,Bookmark,
   Layers, BarChart3
 } from 'lucide-react'
 import { UserRole, type UserRoleType } from '@/config/enums'
@@ -29,6 +29,7 @@ export function Sidebar({ role }: SidebarProps) {
         { label: 'Dashboard', path: '/dashboard/organization', icon: LayoutDashboard },
         { label: 'Tests', path: '/dashboard/tests', icon: FolderKanban },
         { label: 'Students', path: '/dashboard/students', icon: Users2 },
+        { label: 'Bookmarks', path: '/dashboard/bookmarks', icon: Bookmark },
         { label: 'Leaderboards', path: '/dashboard/leaderboards', icon: Trophy },
         { label: 'Billing & Plan', path: '/dashboard/billing', icon: CreditCard },
       ]

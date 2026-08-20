@@ -17,6 +17,13 @@ export const JoinRequestStatus = {
 // Extracts the union type: 0 | 1 | 2
 export type JoinRequestStatusType = typeof JoinRequestStatus[keyof typeof JoinRequestStatus]
 
+export const BookmarkType = {
+  TEST: 1,
+  TEST_SET: 2,
+} as const;
+
+export type BookmarkTypeEnum = (typeof BookmarkType)[keyof typeof BookmarkType];
+
 export enum CorrectAnswer {
   A = 1,
   B = 2,
