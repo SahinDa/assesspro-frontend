@@ -7,7 +7,6 @@ import {
   XCircle,
   UserCheck,
   Search,
-  UserX,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -95,7 +94,6 @@ export default function OrgStudentsView() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isInviteOpen, setIsInviteOpen] = useState(false)
 
-  // Safe Tab Fallback
   const [searchParams, setSearchParams] = useSearchParams()
   const tabParam = searchParams.get('tab')
   const currentTab = ['active', 'pending', 'rejected'].includes(tabParam || '')
@@ -145,22 +143,25 @@ export default function OrgStudentsView() {
   const handleActionConfirm = () => {
     if (!actionState.student || !actionState.actionType) return
     const targetId = actionState.student.id
+    const action = actionState.actionType
 
-    if (actionState.actionType === 'approve') {
+    if (action === 'approve') {
       setStudents((prev) =>
         prev.map((s) =>
           s.id === targetId ? { ...s, status: JoinRequestStatus.APPROVED } : s
         )
       )
-    } else if (actionState.actionType === 'reject') {
+    } else if (action === 'reject') {
       setStudents((prev) =>
         prev.map((s) =>
           s.id === targetId ? { ...s, status: JoinRequestStatus.REJECTED } : s
         )
       )
-    } else if (actionState.actionType === 'remove') {
+    } else if (action === 'remove') {
       setStudents((prev) => prev.filter((s) => s.id !== targetId))
     }
+
+    setActionState({ isOpen: false, actionType: null, student: null })
   }
 
   const handleBatchApprove = (ids: string[]) => {
@@ -222,7 +223,7 @@ export default function OrgStudentsView() {
         )}
       </div>
 
-      {/* Global Zero-Data State (When 0 total records exist) */}
+      {/* Global Zero-Data State */}
       {students.length === 0 ? (
         <div className="min-h-[50vh] flex items-center justify-center p-4">
           <div className="text-center space-y-4 max-w-sm w-full bg-white border border-slate-200/80 rounded-3xl p-8 shadow-xs">
@@ -355,7 +356,7 @@ export default function OrgStudentsView() {
       <StudentActionDialog
         isOpen={actionState.isOpen}
         actionType={actionState.actionType}
-        studentName={actionState.student?.name || ''}
+        student={actionState.student}
         onClose={() => setActionState({ isOpen: false, actionType: null, student: null })}
         onConfirm={handleActionConfirm}
       />
