@@ -1,8 +1,16 @@
-import { Crown, Medal, Trophy, Clock, Flame, Sparkles } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Crown, Trophy, Medal, Clock } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { type LeaderboardRow, formatDuration } from '../utils/leaderboardValidation'
+import { type LeaderboardRow } from '../utils/leaderboardValidation'
+
+function formatDuration(seconds?: number): string {
+  if (!seconds || seconds <= 0) return '0s'
+  const hrs = Math.floor(seconds / 3600)
+  const mins = Math.floor((seconds % 3600) / 60)
+  const secs = seconds % 60
+  if (hrs > 0) return `${hrs}h ${mins}m`
+  if (mins > 0) return `${mins}m ${secs}s`
+  return `${secs}s`
+}
 
 interface LeaderboardPodiumProps {
   topThree: LeaderboardRow[]
@@ -12,168 +20,142 @@ interface LeaderboardPodiumProps {
 export default function LeaderboardPodium({ topThree, isContest = true }: LeaderboardPodiumProps) {
   if (!topThree || topThree.length === 0) return null
 
-  const winner = topThree.find((u) => u.rank === 1) || topThree[0]
-  const runnerUp = topThree.find((u) => u.rank === 2) || topThree[1]
-  const secondRunnerUp = topThree.find((u) => u.rank === 3) || topThree[2]
+  const first = topThree.find((u) => u.rank === 1) || topThree[0]
+  const second = topThree.find((u) => u.rank === 2) || topThree[1]
+  const third = topThree.find((u) => u.rank === 3) || topThree[2]
 
   return (
-    <div className="w-full max-w-4xl mx-auto pt-6 pb-2 px-2 select-none">
-      <div className="grid grid-cols-3 gap-2.5 sm:gap-5 items-end">
+    <div className="w-full max-w-2xl mx-auto pt-6 pb-2 px-3 select-none">
+      <div className="grid grid-cols-3 gap-3 sm:gap-6 items-end">
 
-        {/* ================= 2ND PLACE (SILVER / LEFT) ================= */}
-        <div className="flex flex-col items-center w-full min-w-0">
-          {runnerUp && (
-            <div className="w-full flex flex-col items-center">
-              {/* Profile Avatar */}
-              <div className="relative mb-3 flex flex-col items-center">
-                <Avatar className="h-14 w-14 sm:h-16 sm:w-16 border-2 border-slate-300 ring-4 ring-slate-100 shadow-md bg-white shrink-0">
-                  <AvatarImage src={runnerUp.profile_pic || undefined} alt={runnerUp.firstname} />
-                  <AvatarFallback className="bg-slate-100 text-slate-800 text-sm font-black">
-                    {runnerUp.firstname?.charAt(0).toUpperCase()}
+        {/* ================= 2ND PLACE (RUNNER-UP) ================= */}
+        <div className="flex flex-col items-center min-w-0 w-full">
+          {second && (
+            <div className="flex flex-col items-center w-full">
+              {/* User Info Above Step */}
+              <div className="flex flex-col items-center text-center w-full min-w-0 mb-3 space-y-1">
+                <Avatar className="h-14 w-14 sm:h-16 sm:w-16 rounded-full border-2 border-slate-300 ring-4 ring-slate-100 shadow-sm bg-white shrink-0 overflow-hidden">
+                  <AvatarImage className="rounded-full object-cover" src={second.profile_pic || undefined} alt={second.firstname} />
+                  <AvatarFallback className="h-full w-full rounded-full bg-slate-100 text-slate-800 font-bold text-sm flex items-center justify-center">
+                    {second.firstname?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-slate-700 border-2 border-white flex items-center justify-center text-xs font-black text-white shadow-md">
-                  2
-                </span>
+
+                <div className="w-full min-w-0 space-y-0.5">
+                  <p className="w-full text-xs sm:text-sm font-bold text-slate-900 truncate px-1" title={`${second.firstname} ${second.lastname}`}>
+                    {second.firstname} {second.lastname}
+                  </p>
+
+                  <p className="text-xs sm:text-sm font-extrabold text-slate-700 font-mono">
+                    {second.score} <span className="text-[10px] text-slate-400 font-sans font-normal">pts</span>
+                  </p>
+
+                  {second.duration_seconds > 0 && (
+                    <p className="text-[10px] text-slate-400 font-mono flex items-center justify-center gap-0.5">
+                      <Clock className="h-2.5 w-2.5 shrink-0" />
+                      <span>{formatDuration(second.duration_seconds)}</span>
+                    </p>
+                  )}
+                </div>
               </div>
 
-              {/* Pedestal Step Card (Medium Height: h-48 sm:h-54) */}
-              <Card className="w-full h-48 sm:h-54 bg-white border border-slate-200/90 rounded-t-2xl rounded-b-lg shadow-sm flex flex-col items-center justify-between p-3.5 text-center relative overflow-hidden">
-                <div className="absolute inset-x-0 top-0 h-1 bg-slate-300" />
-
-                <div className="w-full min-w-0">
-                  <Badge
-                    variant="outline"
-                    className="bg-slate-100 text-slate-800 border-slate-300 text-[11px] font-extrabold px-2.5 py-0.5 gap-1 shadow-2xs mb-1"
-                  >
-                    <Medal className="h-3.5 w-3.5 text-slate-600 shrink-0" />
-                    <span>{isContest ? 'Runner-Up' : '2nd Place'}</span>
-                  </Badge>
-
-                  <p className="text-xs sm:text-sm font-extrabold text-slate-900 truncate mt-1.5" title={`${runnerUp.firstname} ${runnerUp.lastname}`}>
-                    {runnerUp.firstname} {runnerUp.lastname}
-                  </p>
-
-                  <p className="text-sm sm:text-base font-black text-slate-900 mt-1">
-                    {runnerUp.score} <span className="text-xs font-semibold text-slate-500">pts</span>
-                  </p>
-
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-xs font-semibold text-slate-700 mt-2 font-mono">
-                    <Clock className="h-3 w-3 text-slate-500 shrink-0" />
-                    <span>{formatDuration(runnerUp.duration_seconds)}</span>
-                  </div>
-                </div>
-
-                <div className="text-3xl sm:text-4xl font-black text-slate-200 font-mono">
-                  2
-                </div>
-              </Card>
+              {/* Step 2 Pedestal Block */}
+              <div className="w-full h-32 sm:h-40 rounded-t-2xl bg-gradient-to-b from-slate-100 via-slate-100/90 to-slate-200/50 border-t-2 border-x-2 border-slate-300/80 flex flex-col items-center justify-center shadow-xs">
+                <Medal className="h-5 w-5 text-slate-500 mb-0.5 opacity-90" />
+                <span className="text-3xl sm:text-4xl font-black text-slate-400 font-mono leading-none">2</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
+                  {isContest ? 'Runner-Up' : '2nd Place'}
+                </span>
+              </div>
             </div>
           )}
         </div>
 
-        {/* ================= 1ST PLACE (GOLD / CENTER - ELEVATED) ================= */}
-        <div className="flex flex-col items-center w-full min-w-0 -translate-y-2 sm:-translate-y-4">
-          {winner && (
-            <div className="w-full flex flex-col items-center">
-              {/* Crown + Winner Avatar */}
-              <div className="relative mb-3 flex flex-col items-center">
-                <Crown className="h-7 w-7 text-amber-500 fill-amber-400 mb-1 drop-shadow-md animate-bounce" />
-                <div className="relative">
-                  <Avatar className="h-16 w-16 sm:h-20 sm:w-20 border-2 border-amber-400 ring-4 ring-amber-100 shadow-xl bg-white shrink-0">
-                    <AvatarImage src={winner.profile_pic || undefined} alt={winner.firstname} />
-                    <AvatarFallback className="bg-amber-100 text-amber-950 text-base font-black">
-                      {winner.firstname?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 border-2 border-white flex items-center justify-center text-xs font-black text-amber-950 shadow-md">
-                    1
-                  </span>
+        {/* ================= 1ST PLACE (WINNER) ================= */}
+        <div className="flex flex-col items-center min-w-0 w-full">
+          {first && (
+            <div className="flex flex-col items-center w-full">
+              {/* Crown + Winner Info Above Step */}
+              <div className="flex flex-col items-center text-center w-full min-w-0 mb-3 space-y-1">
+                <Crown className="h-7 w-7 sm:h-8 sm:w-8 text-amber-500 fill-amber-400 drop-shadow-xs shrink-0" />
+
+                {/* Completely Circular Avatar & Fallback (A) */}
+                <Avatar className="h-16 w-16 sm:h-20 sm:w-20 rounded-full border-2 border-amber-400 ring-4 ring-amber-100/90 shadow-md bg-white shrink-0 overflow-hidden">
+                  <AvatarImage className="rounded-full object-cover" src={first.profile_pic || undefined} alt={first.firstname} />
+                  <AvatarFallback className="h-full w-full rounded-full bg-amber-100 text-amber-950 font-black text-base sm:text-lg flex items-center justify-center">
+                    {first.firstname?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="w-full min-w-0 space-y-0.5">
+                  <p className="w-full text-xs sm:text-base font-extrabold text-slate-900 truncate px-1" title={`${first.firstname} ${first.lastname}`}>
+                    {first.firstname} {first.lastname}
+                  </p>
+
+                  <p className="text-sm sm:text-base font-black text-amber-600 font-mono">
+                    {first.score} <span className="text-xs text-amber-900/60 font-sans font-bold">pts</span>
+                  </p>
+
+                  {first.duration_seconds > 0 && (
+                    <p className="text-[10.5px] text-amber-800/80 font-mono font-medium flex items-center justify-center gap-0.5">
+                      <Clock className="h-2.5 w-2.5 text-amber-600 shrink-0" />
+                      <span>{formatDuration(first.duration_seconds)}</span>
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {/* Pedestal Step Card (Tallest: h-56 sm:h-64) */}
-              <Card className="w-full h-56 sm:h-64 bg-gradient-to-b from-amber-50/70 via-white to-white border-2 border-amber-300 rounded-t-2xl rounded-b-lg shadow-md flex flex-col items-center justify-between p-4 text-center relative overflow-hidden">
-                <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400" />
-
-                <div className="w-full min-w-0">
-                  <Badge
-                    className="bg-amber-400 hover:bg-amber-400 text-amber-950 border-0 text-xs font-black px-3 py-0.5 gap-1 shadow-xs mb-1"
-                  >
-                    {isContest ? <Flame className="h-3.5 w-3.5 fill-current shrink-0" /> : <Sparkles className="h-3.5 w-3.5 fill-current shrink-0" />}
-                    <span>{isContest ? '1st Winner' : 'Champion'}</span>
-                  </Badge>
-
-                  <p className="text-sm sm:text-base font-black text-slate-900 truncate mt-2" title={`${winner.firstname} ${winner.lastname}`}>
-                    {winner.firstname} {winner.lastname}
-                  </p>
-
-                  <p className="text-base sm:text-lg font-black text-amber-700 mt-1">
-                    {winner.score} <span className="text-xs font-bold text-amber-900/70">pts</span>
-                  </p>
-
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100/90 text-xs font-bold text-amber-950 mt-2 font-mono">
-                    <Clock className="h-3.5 w-3.5 text-amber-700 shrink-0" />
-                    <span>{formatDuration(winner.duration_seconds)}</span>
-                  </div>
-                </div>
-
-                <div className="text-4xl sm:text-5xl font-black text-amber-200/90 font-mono">
-                  1
-                </div>
-              </Card>
+              {/* Step 1 Pedestal Block (Tallest) */}
+              <div className="w-full h-44 sm:h-56 rounded-t-2xl bg-gradient-to-b from-amber-100/90 via-amber-50 to-amber-100/40 border-t-2 border-x-2 border-amber-300 shadow-md flex flex-col items-center justify-center">
+                <Crown className="h-6 w-6 text-amber-600 mb-0.5" />
+                <span className="text-4xl sm:text-5xl font-black text-amber-600 font-mono leading-none">1</span>
+                <span className="text-[10px] sm:text-xs font-black text-amber-800 uppercase tracking-wider mt-1">
+                  {isContest ? 'Winner' : '1st Place'}
+                </span>
+              </div>
             </div>
           )}
         </div>
 
-        {/* ================= 3RD PLACE (BRONZE / RIGHT) ================= */}
-        <div className="flex flex-col items-center w-full min-w-0">
-          {secondRunnerUp && (
-            <div className="w-full flex flex-col items-center">
-              {/* Profile Avatar */}
-              <div className="relative mb-3 flex flex-col items-center">
-                <Avatar className="h-14 w-14 sm:h-16 sm:w-16 border-2 border-amber-300 ring-4 ring-amber-50 shadow-md bg-white shrink-0">
-                  <AvatarImage src={secondRunnerUp.profile_pic || undefined} alt={secondRunnerUp.firstname} />
-                  <AvatarFallback className="bg-amber-50 text-amber-900 text-sm font-black">
-                    {secondRunnerUp.firstname?.charAt(0).toUpperCase()}
+        {/* ================= 3RD PLACE (3RD PLACE) ================= */}
+        <div className="flex flex-col items-center min-w-0 w-full">
+          {third && (
+            <div className="flex flex-col items-center w-full">
+              {/* User Info Above Step */}
+              <div className="flex flex-col items-center text-center w-full min-w-0 mb-3 space-y-1">
+                <Avatar className="h-14 w-14 sm:h-16 sm:w-16 rounded-full border-2 border-amber-300 ring-4 ring-amber-50 shadow-sm bg-white shrink-0 overflow-hidden">
+                  <AvatarImage className="rounded-full object-cover" src={third.profile_pic || undefined} alt={third.firstname} />
+                  <AvatarFallback className="h-full w-full rounded-full bg-amber-50 text-amber-900 font-bold text-sm flex items-center justify-center">
+                    {third.firstname?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-amber-800 border-2 border-white flex items-center justify-center text-xs font-black text-white shadow-md">
-                  3
-                </span>
+
+                <div className="w-full min-w-0 space-y-0.5">
+                  <p className="w-full text-xs sm:text-sm font-bold text-slate-900 truncate px-1" title={`${third.firstname} ${third.lastname}`}>
+                    {third.firstname} {third.lastname}
+                  </p>
+
+                  <p className="text-xs sm:text-sm font-extrabold text-slate-700 font-mono">
+                    {third.score} <span className="text-[10px] text-slate-400 font-sans font-normal">pts</span>
+                  </p>
+
+                  {third.duration_seconds > 0 && (
+                    <p className="text-[10px] text-slate-400 font-mono flex items-center justify-center gap-0.5">
+                      <Clock className="h-2.5 w-2.5 shrink-0" />
+                      <span>{formatDuration(third.duration_seconds)}</span>
+                    </p>
+                  )}
+                </div>
               </div>
 
-              {/* Pedestal Step Card (Shortest: h-42 sm:h-48) */}
-              <Card className="w-full h-42 sm:h-48 bg-white border border-slate-200/90 rounded-t-2xl rounded-b-lg shadow-sm flex flex-col items-center justify-between p-3.5 text-center relative overflow-hidden">
-                <div className="absolute inset-x-0 top-0 h-1 bg-amber-400/80" />
-
-                <div className="w-full min-w-0">
-                  <Badge
-                    variant="outline"
-                    className="bg-amber-50 text-amber-900 border-amber-200 text-[11px] font-extrabold px-2.5 py-0.5 gap-1 shadow-2xs mb-1"
-                  >
-                    <Trophy className="h-3.5 w-3.5 text-amber-700 shrink-0" />
-                    <span>{isContest ? '2nd Runner-Up' : '3rd Place'}</span>
-                  </Badge>
-
-                  <p className="text-xs sm:text-sm font-extrabold text-slate-900 truncate mt-1.5" title={`${secondRunnerUp.firstname} ${secondRunnerUp.lastname}`}>
-                    {secondRunnerUp.firstname} {secondRunnerUp.lastname}
-                  </p>
-
-                  <p className="text-sm sm:text-base font-black text-slate-900 mt-1">
-                    {secondRunnerUp.score} <span className="text-xs font-semibold text-slate-500">pts</span>
-                  </p>
-
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-xs font-semibold text-amber-950 mt-2 font-mono">
-                    <Clock className="h-3 w-3 text-amber-700 shrink-0" />
-                    <span>{formatDuration(secondRunnerUp.duration_seconds)}</span>
-                  </div>
-                </div>
-
-                <div className="text-3xl sm:text-4xl font-black text-slate-200 font-mono">
-                  3
-                </div>
-              </Card>
+              {/* Step 3 Pedestal Block (Shortest) */}
+              <div className="w-full h-24 sm:h-32 rounded-t-2xl bg-gradient-to-b from-amber-50 via-orange-50/60 to-orange-100/30 border-t-2 border-x-2 border-amber-200/80 flex flex-col items-center justify-center shadow-2xs">
+                <Trophy className="h-5 w-5 text-amber-700 mb-0.5 opacity-80" />
+                <span className="text-3xl sm:text-4xl font-black text-amber-800/40 font-mono leading-none">3</span>
+                <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mt-1">
+                  {isContest ? '2nd Runner-Up' : '3rd Place'}
+                </span>
+              </div>
             </div>
           )}
         </div>
