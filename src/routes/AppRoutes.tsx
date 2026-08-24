@@ -14,6 +14,7 @@ import { UserRole } from '@/config/enums'
 import OrgTestsView from '@/modules/tests/views/OrgTestsView'
 import OrgStudentsView from '@/modules/students/views/OrgStudentsView'
 const BookmarksView = lazy(() => import('@/modules/bookmarks/views/BookmarksView'))
+const LeaderboardView = lazy(() => import('@/modules/leaderboards/views/LeaderboardView'))
 
 export default function AppRoutes() {
   return (
@@ -39,6 +40,7 @@ export default function AppRoutes() {
         <Route path="tests" element={<OrgTestsView />} />
         <Route path="students" element={<OrgStudentsView />} />
         <Route path="bookmarks" element={<BookmarksView />} />
+        <Route path="leaderboards" element={<LeaderboardView />} />
       </Route>
 
       {/* 2. Student Dashboard */}
