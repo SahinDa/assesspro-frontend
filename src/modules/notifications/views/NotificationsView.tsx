@@ -1,8 +1,16 @@
 import { useState, useMemo } from 'react'
 import { Search, X, Inbox, CheckCheck } from 'lucide-react'
-import { Card } from '@/components/ui/card'
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription 
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
 
 import NotificationItem from '../components/NotificationItem'
 import NotificationFilters from '../components/NotificationFilters'
@@ -80,7 +88,6 @@ export default function NotificationsView() {
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
-    // Safety check: Never delete global system notices
     const target = notifications.find((n) => n.id === id)
     if (target?.is_global) return
 
@@ -103,7 +110,6 @@ export default function NotificationsView() {
     })
   }, [notifications, filter, searchQuery])
 
-  // Pinned vs Regular Items
   const pinnedNotifications = useMemo(() => {
     return filteredNotifications.filter((n) => n.is_pinned)
   }, [filteredNotifications])
@@ -112,7 +118,6 @@ export default function NotificationsView() {
     return filteredNotifications.filter((n) => !n.is_pinned)
   }, [filteredNotifications])
 
-  // Date Grouping (Today, Yesterday, Earlier)
   const groupedUnpinnedNotifications = useMemo(() => {
     const groups: { [key in 'Today' | 'Yesterday' | 'Earlier']?: NotificationModel[] } = {}
 
@@ -133,100 +138,108 @@ export default function NotificationsView() {
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6 pb-12">
       
-      {/* 1. Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">
-              Notifications
-            </h1>
-            {unreadCount > 0 && (
-              <Badge className="bg-indigo-600 text-white font-bold text-xs px-2.5 py-0.5 rounded-full shadow-none">
-                {unreadCount} Unread
-              </Badge>
-            )}
-          </div>
-          <p className="text-xs text-slate-500">
-            Real-time announcements, contest updates, and assessment alerts.
-          </p>
-        </div>
+      {/* 1. Header Section (Using shadcn CardHeader, CardTitle, and CardDescription) */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <CardHeader className="p-0 space-y-1">
+            <div className="flex items-center gap-2.5">
+              <CardTitle className="text-2xl font-black tracking-tight text-foreground">
+                Notifications
+              </CardTitle>
+              {unreadCount > 0 && (
+                <Badge variant="default" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-2.5 py-0.5 rounded-full shadow-none">
+                  {unreadCount} Unread
+                </Badge>
+              )}
+            </div>
+            <CardDescription className="text-xs text-muted-foreground">
+              Real-time announcements, contest updates, and assessment alerts.
+            </CardDescription>
+          </CardHeader>
 
-        {unreadCount > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleMarkAllRead}
-            className="text-xs font-bold rounded-xl border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 gap-1.5 h-9 shrink-0 cursor-pointer"
-          >
-            <CheckCheck className="h-4 w-4 text-indigo-600" />
-            <span>Mark all as read</span>
-          </Button>
-        )}
+          {unreadCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleMarkAllRead}
+              className="text-xs font-bold gap-1.5 h-9 rounded-xl shrink-0"
+            >
+              <CheckCheck className="h-4 w-4 text-indigo-600" />
+              <span>Mark all as read</span>
+            </Button>
+          )}
+        </div>
+        <Separator />
       </div>
 
-      {/* 2. Control Toolbar (Filters & Search) */}
-      <Card className="p-3.5 border-slate-200 bg-white shadow-xs rounded-2xl">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 w-full">
-          {/* Top Filter Buttons: All, Pinned, Direct, Global */}
-          <NotificationFilters
-            activeFilter={filter}
-            onFilterChange={(newFilter) => {
-              setFilter(newFilter)
-              setSearchQuery('')
-            }}
-            pinnedCount={pinnedCount}
-            directCount={directCount}
-            globalCount={globalCount}
-            totalCount={notifications.length}
-          />
-
-          {/* Search Field */}
-          <div className="flex items-center w-full sm:w-64 md:w-72 shrink-0 h-10 px-3.5 gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 focus-within:bg-white focus-within:border-indigo-500 transition-colors">
-            <Search className="h-4 w-4 text-slate-400 shrink-0 select-none pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search notifications..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-transparent text-xs text-slate-900 placeholder:text-slate-400 border-none outline-none focus:outline-none focus:ring-0 shadow-none"
+      {/* 2. Control Toolbar (Card + Input + Button) */}
+      <Card className="rounded-2xl shadow-xs border-border">
+        <CardContent className="p-3.5">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 w-full">
+            <NotificationFilters
+              activeFilter={filter}
+              onFilterChange={(newFilter) => {
+                setFilter(newFilter)
+                setSearchQuery('')
+              }}
+              pinnedCount={pinnedCount}
+              directCount={directCount}
+              globalCount={globalCount}
+              totalCount={notifications.length}
             />
-            {searchQuery && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setSearchQuery('')}
-                className="h-6 w-6 p-0 text-slate-400 hover:text-slate-700 rounded-md shrink-0 cursor-pointer"
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            )}
+
+            {/* shadcn Input with Relative Search/Clear Icons */}
+            <div className="relative w-full sm:w-64 md:w-72 shrink-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <Input
+                type="text"
+                placeholder="Search notifications..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-8 h-9 text-xs rounded-xl bg-muted/40 focus-visible:ring-1 focus-visible:ring-indigo-500"
+              />
+              {searchQuery && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
+        </CardContent>
       </Card>
 
-      {/* 3. Feed List */}
+      {/* 3. Empty State or Notifications Feed */}
       {filteredNotifications.length === 0 ? (
-        <Card className="text-center py-16 px-4 border-dashed border-slate-200 bg-white shadow-none space-y-2 rounded-2xl">
-          <Inbox className="h-8 w-8 text-slate-300 mx-auto" />
-          <p className="text-sm font-bold text-slate-700">No notifications found</p>
-          <p className="text-xs text-slate-500">
-            {searchQuery
-              ? 'Try adjusting your search query or resetting filters.'
-              : 'You have no active notifications under this category.'}
-          </p>
+        <Card className="border-dashed shadow-none rounded-2xl">
+          <CardHeader className="text-center py-16 space-y-2">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted/60">
+              <Inbox className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <CardTitle className="text-sm font-bold">No notifications found</CardTitle>
+            <CardDescription className="text-xs">
+              {searchQuery
+                ? 'Try adjusting your search query or resetting filters.'
+                : 'You have no active notifications under this category.'}
+            </CardDescription>
+          </CardHeader>
         </Card>
       ) : (
         <div className="space-y-6">
           
-          {/* A. Pinned Section */}
+          {/* A. Pinned Group */}
           {pinnedNotifications.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2.5">
                 <Badge variant="outline" className="text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100/70 border-amber-300 py-0.5 px-2">
                   📌 Pinned Announcements
                 </Badge>
-                <div className="flex-1 h-px bg-amber-200/70" />
+                <Separator className="flex-1 bg-amber-200/70" />
               </div>
 
               <div className="space-y-2.5">
@@ -243,7 +256,7 @@ export default function NotificationsView() {
             </div>
           )}
 
-          {/* B. Chronological Feed */}
+          {/* B. Chronological Groups */}
           {filter !== 'pinned' && (['Today', 'Yesterday', 'Earlier'] as const).map((groupKey) => {
             const items = groupedUnpinnedNotifications[groupKey]
             if (!items || items.length === 0) return null
@@ -251,10 +264,10 @@ export default function NotificationsView() {
             return (
               <div key={groupKey} className="space-y-3">
                 <div className="flex items-center gap-2.5">
-                  <Badge variant="outline" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 border-slate-200 py-0.5 px-2">
+                  <Badge variant="outline" className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/60 border-border py-0.5 px-2">
                     {groupKey}
                   </Badge>
-                  <div className="flex-1 h-px bg-slate-200/70" />
+                  <Separator className="flex-1" />
                 </div>
 
                 <div className="space-y-2.5">
