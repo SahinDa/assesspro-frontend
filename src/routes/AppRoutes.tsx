@@ -15,6 +15,7 @@ import OrgTestsView from '@/modules/tests/views/OrgTestsView'
 import OrgStudentsView from '@/modules/students/views/OrgStudentsView'
 const BookmarksView = lazy(() => import('@/modules/bookmarks/views/BookmarksView'))
 const LeaderboardView = lazy(() => import('@/modules/leaderboards/views/LeaderboardView'))
+import NotificationsView from '@/modules/notifications/views/NotificationsView'
 
 export default function AppRoutes() {
   return (
@@ -41,6 +42,7 @@ export default function AppRoutes() {
         <Route path="students" element={<OrgStudentsView />} />
         <Route path="bookmarks" element={<BookmarksView />} />
         <Route path="leaderboards" element={<LeaderboardView />} />
+        <Route path="notifications" element={<NotificationsView />} />
       </Route>
 
       {/* 2. Student Dashboard */}
