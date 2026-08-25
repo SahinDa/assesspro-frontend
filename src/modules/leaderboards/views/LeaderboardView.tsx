@@ -166,18 +166,20 @@ export default function LeaderboardView() {
       
       {/* 1. Header & Section Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
-        <div>
+        <div className="space-y-1">
           <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">Leaderboard Portal</h1>
-            <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold px-2.5 py-0.5">
+            <div className="text-2xl font-black tracking-tight text-slate-900">
+              Leaderboard Portal
+            </div>
+            <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold px-2.5 py-0.5 shadow-none">
               {isContestSection ? 'Contest Standings' : 'Overall Standings'}
             </Badge>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <div className="text-xs text-slate-500">
             {isContestSection
               ? 'Final verified rankings, candidate scores, and proctoring metrics for competitive events.'
               : 'Cumulative student standings across practice test sets and single tests.'}
-          </p>
+          </div>
         </div>
 
         {/* Section Tabs */}
@@ -195,7 +197,7 @@ export default function LeaderboardView() {
               className="text-xs font-bold rounded-lg px-3 gap-1.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 text-slate-600 cursor-pointer shadow-2xs transition-all"
             >
               <Trophy className="h-3.5 w-3.5 text-indigo-600" />
-              <span>Contests</span>
+              <div>Contests</div>
             </TabsTrigger>
 
             <TabsTrigger
@@ -203,24 +205,24 @@ export default function LeaderboardView() {
               className="text-xs font-bold rounded-lg px-3 gap-1.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 text-slate-600 cursor-pointer shadow-2xs transition-all"
             >
               <BarChart3 className="h-3.5 w-3.5 text-slate-500" />
-              <span>Current Position</span>
+              <div>Current Position</div>
             </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
-      {/* 2. Control Toolbar (All items strictly on the same line) */}
+      {/* 2. Control Toolbar (Expanded Search Field Width) */}
       <Card className="p-3.5 border-slate-200 bg-white shadow-xs rounded-2xl">
-        <div className="flex flex-row items-center justify-between gap-3 w-full">
+        <div className="flex flex-row items-center justify-between gap-4 w-full">
           
           {/* Target Assessment Selectors */}
           <div className="flex-1 min-w-0">
             {isContestSection ? (
               <div className="flex flex-row items-center gap-2.5 w-full min-w-0">
-                <span className="text-xs font-bold text-slate-700 shrink-0 hidden sm:flex items-center gap-1.5">
+                <Badge variant="outline" className="text-xs font-bold text-slate-700 shrink-0 hidden sm:flex items-center gap-1.5 bg-slate-50 border-slate-200 py-1.5 px-2.5">
                   <Sparkles className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                   Contest:
-                </span>
+                </Badge>
                 <div className="w-full min-w-0 flex-1">
                   <Select
                     value={selectedContestId}
@@ -314,14 +316,15 @@ export default function LeaderboardView() {
             )}
           </div>
 
-          {/* Search Input */}
-          <div className="relative w-44 sm:w-60 md:w-64 shrink-0">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
-            <Input
-              placeholder="Search candidate..."
+       {/* Search Input Container */}
+       <div className="flex items-center w-52 sm:w-72 md:w-80 lg:w-96 shrink-0 h-10 px-3.5 gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 focus-within:bg-white focus-within:border-indigo-500 transition-colors">
+            <Search className="h-4 w-4 text-slate-400 shrink-0 select-none pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search candidate name or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-10 text-xs pl-9 pr-8 rounded-xl border-slate-200 bg-slate-50/70 text-slate-900 placeholder:text-slate-400 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-indigo-500"
+              className="w-full bg-transparent text-xs text-slate-900 placeholder:text-slate-400 border-none outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 shadow-none"
             />
             {searchQuery && (
               <Button
@@ -329,7 +332,7 @@ export default function LeaderboardView() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-1.5 top-1.5 h-7 w-7 p-0 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg"
+                className="h-6 w-6 p-0 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-md shrink-0"
               >
                 <X className="h-3.5 w-3.5" />
               </Button>
@@ -347,7 +350,7 @@ export default function LeaderboardView() {
       {/* 4. Table Header Status */}
       <div className="flex items-center justify-between text-xs text-slate-600 pt-1">
         <div className="flex items-center gap-2">
-          <h3 className="font-extrabold uppercase tracking-wider text-slate-900">
+          <div className="font-extrabold uppercase tracking-wider text-slate-900">
             {searchQuery
               ? 'Search Results'
               : isContestSection
@@ -357,7 +360,7 @@ export default function LeaderboardView() {
               : selectedSetId === 'all'
               ? `Standings for ${selectedTestTitle}`
               : `Standings for ${selectedSetTitle}`}
-          </h3>
+          </div>
           {!searchQuery && (
             <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-200 text-xs font-bold px-2 py-0">
               {displayedTableList.length} in table
@@ -365,10 +368,10 @@ export default function LeaderboardView() {
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 font-medium">
+        <Badge variant="outline" className="flex items-center gap-1.5 font-medium bg-slate-50 border-slate-200 text-slate-700 py-1 px-2.5">
           <Users className="h-3.5 w-3.5 text-slate-500" />
-          <span>Total: <strong className="text-slate-900 font-bold">{totalParticipants}</strong> Participants</span>
-        </div>
+          <div>Total: <span className="text-slate-900 font-bold">{totalParticipants}</span> Participants</div>
+        </Badge>
       </div>
 
       {/* 5. Paginated Rankings Table */}
