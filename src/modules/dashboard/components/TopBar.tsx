@@ -2,6 +2,7 @@ import { UserRole, type UserRoleType } from '@/config/enums'
 import { Building2, ShieldCheck, Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { UserSettingsDropdown } from './UserSettingsDropdown'
+import { useNavigate } from 'react-router-dom'
 
 interface TopBarProps {
   role?: UserRoleType
@@ -20,7 +21,15 @@ export function TopBar({
   avatarUrl,
   onSignOut,
 }: TopBarProps) {
+  const navigate = useNavigate()
   const isAdmin = role === UserRole.ADMIN
+
+  const notificationPath =
+    role === UserRole.ORGANIZATION
+      ? '/dashboard/notifications'
+      : role === UserRole.ADMIN
+      ? '/admin/notifications'
+      : '/student/notifications'
 
   return (
     <header className="h-16 border-b border-slate-200/80 bg-white px-6 flex items-center justify-between sticky top-0 z-30">
@@ -50,7 +59,12 @@ export function TopBar({
 
       {/* Right side: Notifications & User Settings Dropdown */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-slate-500 hover:text-slate-900 relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(notificationPath)}
+          className="h-9 w-9 rounded-xl text-slate-500 hover:text-slate-900 relative cursor-pointer"
+        >
           <Bell className="h-4 w-4" />
           <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-indigo-600 ring-2 ring-white" />
         </Button>
