@@ -130,7 +130,7 @@ export default function NotificationsView() {
   return (
     <main className="w-full max-w-4xl mx-auto space-y-8 pb-24 px-2 sm:px-0">
       
-      {/* 1. Header */}
+      {/* 1. Header Section */}
       <header className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <CardHeader className="p-0 space-y-1">
@@ -144,8 +144,9 @@ export default function NotificationsView() {
                 </Badge>
               )}
             </div>
-            <CardDescription className="text-xs text-muted-foreground">
-              Real-time announcements, contest updates, and assessment alerts.
+            {/* Clean, single-line sentence without line-breaking */}
+            <CardDescription className="text-xs text-muted-foreground whitespace-nowrap">
+              Stay updated on upcoming contests, test results, and platform announcements.
             </CardDescription>
           </CardHeader>
 
@@ -218,7 +219,7 @@ export default function NotificationsView() {
             </section>
           )}
 
-          {/* B. Timeline Feed Sections */}
+          {/* B. Chronological Feed Sections */}
           {filter !== 'pinned' && (['Today', 'Yesterday', 'Earlier'] as const).map((groupKey) => {
             const items = groupedUnpinnedNotifications[groupKey]
             if (!items || items.length === 0) return null
