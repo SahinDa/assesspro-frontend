@@ -92,13 +92,20 @@ export default function LeaderboardView() {
   const totalParticipants = rawList.length
   const topThree = rawList.slice(0, 3)
 
+  const isContestSection = section === 'contest'
+
+  // If search is active -> filter list
+  // If Contest -> skip top 3 (they are in the podium)
+  // If Current Position (Tests / Sets) -> show entire list in table
   const displayedTableList = searchQuery
     ? rawList.filter((entry) => {
         const q = searchQuery.toLowerCase().trim()
         const fullName = `${entry.firstname} ${entry.lastname}`.toLowerCase()
         return fullName.includes(q) || entry.email.toLowerCase().includes(q)
       })
-    : rawList.slice(3)
+    : isContestSection
+    ? rawList.slice(3)
+    : rawList
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6 pb-12">
@@ -109,11 +116,11 @@ export default function LeaderboardView() {
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl font-black tracking-tight text-slate-900">Leaderboard Portal</h1>
             <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold px-2.5 py-0.5">
-              {section === 'contest' ? 'Contest Standings' : 'Overall Standings'}
+              {isContestSection ? 'Contest Standings' : 'Overall Standings'}
             </Badge>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            {section === 'contest'
+            {isContestSection
               ? 'Final verified rankings, candidate scores, and proctoring metrics for competitive events.'
               : 'Cumulative student standings across practice test sets and single tests.'}
           </p>
@@ -154,7 +161,7 @@ export default function LeaderboardView() {
           
           {/* Target Assessment Selectors */}
           <div className="flex-1 flex flex-wrap items-center gap-3">
-            {section === 'contest' ? (
+            {isContestSection ? (
               <div className="flex items-center gap-2 w-full md:max-w-md">
                 <span className="text-xs font-bold text-slate-700 shrink-0 flex items-center gap-1.5">
                   <Sparkles className="h-3.5 w-3.5 text-amber-500" />
@@ -259,19 +266,20 @@ export default function LeaderboardView() {
         </div>
       </Card>
 
-      {/* 3. Top 3 Podium (Hidden during active search) */}
-      {!searchQuery && topThree.length > 0 && (
-        <LeaderboardPodium
-          topThree={topThree}
-          isContest={section === 'contest'}
-        />
+      {/* 3. Top 3 Podium (Rendered strictly for Contests when not searching) */}
+      {isContestSection && !searchQuery && topThree.length > 0 && (
+        <LeaderboardPodium topThree={topThree} />
       )}
 
       {/* 4. Table Header Status */}
       <div className="flex items-center justify-between text-xs text-slate-600 pt-1">
         <div className="flex items-center gap-2">
           <h3 className="font-extrabold uppercase tracking-wider text-slate-900">
-            {searchQuery ? 'Search Results' : 'Other Standings (Rank #4+)'}
+            {searchQuery
+              ? 'Search Results'
+              : isContestSection
+              ? 'Other Standings (Rank #4+)'
+              : 'All Standings'}
           </h3>
           {!searchQuery && (
             <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-200 text-xs font-bold px-2 py-0">
