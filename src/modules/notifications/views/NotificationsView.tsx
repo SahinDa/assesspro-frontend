@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Search, X, Inbox, CheckCheck } from 'lucide-react'
+import { Inbox, CheckCheck } from 'lucide-react'
 import { 
   Card, 
   CardContent, 
@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 
 import NotificationItem from '../components/NotificationItem'
@@ -75,7 +74,6 @@ export default function NotificationsView() {
   const [notifications, setNotifications] = useState<NotificationModel[]>(INITIAL_NOTIFICATIONS)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [filter, setFilter] = useState<NotificationFilterType>('all')
-  const [searchQuery, setSearchQuery] = useState('')
 
   const toggleExpand = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id))
@@ -95,20 +93,14 @@ export default function NotificationsView() {
     if (expandedId === id) setExpandedId(null)
   }
 
-  // Filter & Search Logic
   const filteredNotifications = useMemo(() => {
     return notifications.filter((item) => {
       if (filter === 'pinned' && !item.is_pinned) return false
       if (filter === 'direct' && (item.is_global || item.is_pinned)) return false
       if (filter === 'global' && (!item.is_global || item.is_pinned)) return false
-
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim()
-        return item.subject.toLowerCase().includes(q) || item.message.toLowerCase().includes(q)
-      }
       return true
     })
-  }, [notifications, filter, searchQuery])
+  }, [notifications, filter])
 
   const pinnedNotifications = useMemo(() => {
     return filteredNotifications.filter((n) => n.is_pinned)
@@ -136,10 +128,10 @@ export default function NotificationsView() {
   const unreadCount = notifications.filter((n) => !n.is_read).length
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-6 pb-12">
+    <main className="w-full max-w-4xl mx-auto space-y-8 pb-24 px-2 sm:px-0">
       
-      {/* 1. Header Section (Using shadcn CardHeader, CardTitle, and CardDescription) */}
-      <div className="space-y-4">
+      {/* 1. Header */}
+      <header className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <CardHeader className="p-0 space-y-1">
             <div className="flex items-center gap-2.5">
@@ -170,47 +162,19 @@ export default function NotificationsView() {
           )}
         </div>
         <Separator />
-      </div>
+      </header>
 
-      {/* 2. Control Toolbar (Card + Input + Button) */}
+      {/* 2. Filter Toolbar */}
       <Card className="rounded-2xl shadow-xs border-border">
-        <CardContent className="p-3.5">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 w-full">
-            <NotificationFilters
-              activeFilter={filter}
-              onFilterChange={(newFilter) => {
-                setFilter(newFilter)
-                setSearchQuery('')
-              }}
-              pinnedCount={pinnedCount}
-              directCount={directCount}
-              globalCount={globalCount}
-              totalCount={notifications.length}
-            />
-
-            {/* shadcn Input with Relative Search/Clear Icons */}
-            <div className="relative w-full sm:w-64 md:w-72 shrink-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-              <Input
-                type="text"
-                placeholder="Search notifications..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-8 h-9 text-xs rounded-xl bg-muted/40 focus-visible:ring-1 focus-visible:ring-indigo-500"
-              />
-              {searchQuery && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-              )}
-            </div>
-          </div>
+        <CardContent className="p-3">
+          <NotificationFilters
+            activeFilter={filter}
+            onFilterChange={setFilter}
+            pinnedCount={pinnedCount}
+            directCount={directCount}
+            globalCount={globalCount}
+            totalCount={notifications.length}
+          />
         </CardContent>
       </Card>
 
@@ -223,18 +187,16 @@ export default function NotificationsView() {
             </div>
             <CardTitle className="text-sm font-bold">No notifications found</CardTitle>
             <CardDescription className="text-xs">
-              {searchQuery
-                ? 'Try adjusting your search query or resetting filters.'
-                : 'You have no active notifications under this category.'}
+              You have no active notifications under this category.
             </CardDescription>
           </CardHeader>
         </Card>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-10">
           
-          {/* A. Pinned Group */}
+          {/* A. Pinned Section */}
           {pinnedNotifications.length > 0 && (
-            <div className="space-y-3">
+            <section className="space-y-4">
               <div className="flex items-center gap-2.5">
                 <Badge variant="outline" className="text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100/70 border-amber-300 py-0.5 px-2">
                   📌 Pinned Announcements
@@ -242,7 +204,7 @@ export default function NotificationsView() {
                 <Separator className="flex-1 bg-amber-200/70" />
               </div>
 
-              <div className="space-y-2.5">
+              <div className="w-full">
                 {pinnedNotifications.map((item) => (
                   <NotificationItem
                     key={item.id}
@@ -253,16 +215,16 @@ export default function NotificationsView() {
                   />
                 ))}
               </div>
-            </div>
+            </section>
           )}
 
-          {/* B. Chronological Groups */}
+          {/* B. Timeline Feed Sections */}
           {filter !== 'pinned' && (['Today', 'Yesterday', 'Earlier'] as const).map((groupKey) => {
             const items = groupedUnpinnedNotifications[groupKey]
             if (!items || items.length === 0) return null
 
             return (
-              <div key={groupKey} className="space-y-3">
+              <section key={groupKey} className="space-y-4">
                 <div className="flex items-center gap-2.5">
                   <Badge variant="outline" className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/60 border-border py-0.5 px-2">
                     {groupKey}
@@ -270,7 +232,7 @@ export default function NotificationsView() {
                   <Separator className="flex-1" />
                 </div>
 
-                <div className="space-y-2.5">
+                <div className="w-full">
                   {items.map((item) => (
                     <NotificationItem
                       key={item.id}
@@ -281,13 +243,13 @@ export default function NotificationsView() {
                     />
                   ))}
                 </div>
-              </div>
+              </section>
             )
           })}
 
         </div>
       )}
 
-    </div>
+    </main>
   )
 }
