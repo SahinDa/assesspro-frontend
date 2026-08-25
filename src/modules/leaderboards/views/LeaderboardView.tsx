@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Search,
   FileText,
@@ -26,33 +26,39 @@ import LeaderboardTable from '../components/LeaderboardTable'
 import {
   type LeaderboardRow,
   type LeaderboardSection,
-  type CurrentPositionScope,
 } from '../utils/leaderboardValidation'
 
 const MOCK_CONTESTS = [
-  { id: 'c-101', title: 'National Coding Grand Prix 2026' },
-  { id: 'c-102', title: 'Full Stack Hackathon Finals' },
+  { id: 'c-101', title: 'National Coding Grand Prix 2026 - Phase 1 Assessment' },
+  { id: 'c-102', title: 'Full Stack Engineering Hackathon Championship Finals' },
 ]
 
+// Tests list
 const MOCK_TESTS = [
-  { id: 't-101', title: 'Data Structures & Algorithms - Mock 1' },
+  { id: 't-101', title: 'Data Structures & Algorithms' },
   { id: 't-102', title: 'System Architecture & Database Design' },
 ]
 
-const MOCK_TEST_SETS = [
-  { id: 'ts-201', title: 'Full Stack Engineering Bundle' },
-  { id: 'ts-202', title: 'Senior Backend Assessment Track' },
-]
+// Test Sets mapped to their parent Test
+const MOCK_TEST_SETS: Record<string, { id: string; title: string }[]> = {
+  't-101': [
+    { id: 'ts-101-1', title: 'Arrays & Dynamic Programming Track' },
+    { id: 'ts-101-2', title: 'Trees & Graph Traversal Track' },
+  ],
+  't-102': [
+    { id: 'ts-102-1', title: 'Distributed Systems & Microservices Track' },
+    { id: 'ts-102-2', title: 'SQL & Query Optimization Track' },
+  ],
+}
 
 const MOCK_DATA: Record<string, LeaderboardRow[]> = {
+  // Contests
   'c-101': [
     { rank: 1, attempt_id: 'a-1', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 495, violation_score: 0, duration_seconds: 3100 },
     { rank: 2, attempt_id: 'a-2', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 480, violation_score: 0, duration_seconds: 3250 },
     { rank: 3, attempt_id: 'a-3', user_id: 'u-3', firstname: 'Rohan', lastname: 'Verma', email: 'rohan.v@example.com', profile_pic: null, score: 465, violation_score: 0, duration_seconds: 3400 },
     { rank: 4, attempt_id: 'a-4', user_id: 'u-4', firstname: 'Sneha', lastname: 'Roy', email: 'sneha.roy@example.com', profile_pic: null, score: 440, violation_score: 0, duration_seconds: 3620 },
     { rank: 5, attempt_id: 'a-5', user_id: 'u-5', firstname: 'Vikram', lastname: 'Das', email: 'vikram.das@example.com', profile_pic: null, score: 420, violation_score: 1, duration_seconds: 3750 },
-    { rank: 6, attempt_id: 'a-6', user_id: 'u-6', firstname: 'Ananya', lastname: 'Iyer', email: 'ananya.i@example.com', profile_pic: null, score: 410, violation_score: 0, duration_seconds: 3900 },
-    { rank: 7, attempt_id: 'a-7', user_id: 'u-7', firstname: 'Karan', lastname: 'Mehta', email: 'karan.m@example.com', profile_pic: null, score: 395, violation_score: 2, duration_seconds: 4050 },
   ],
   'c-102': [
     { rank: 1, attempt_id: 'a-8', user_id: 'u-8', firstname: 'Dev', lastname: 'Gupta', email: 'dev.g@example.com', profile_pic: null, score: 290, violation_score: 0, duration_seconds: 1800 },
@@ -60,43 +66,91 @@ const MOCK_DATA: Record<string, LeaderboardRow[]> = {
     { rank: 3, attempt_id: 'a-10', user_id: 'u-10', firstname: 'Kabir', lastname: 'Nair', email: 'kabir.n@example.com', profile_pic: null, score: 260, violation_score: 0, duration_seconds: 2100 },
     { rank: 4, attempt_id: 'a-11', user_id: 'u-11', firstname: 'Siddharth', lastname: 'Rao', email: 'sid.r@example.com', profile_pic: null, score: 245, violation_score: 0, duration_seconds: 2250 },
   ],
-  't-101': [
-    { rank: 1, attempt_id: 'a-12', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 98, violation_score: 0, duration_seconds: 2300 },
-    { rank: 2, attempt_id: 'a-13', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 92, violation_score: 0, duration_seconds: 2475 },
-    { rank: 3, attempt_id: 'a-14', user_id: 'u-3', firstname: 'Rohan', lastname: 'Verma', email: 'rohan.v@example.com', profile_pic: null, score: 89, violation_score: 1, duration_seconds: 2700 },
-    { rank: 4, attempt_id: 'a-15', user_id: 'u-4', firstname: 'Sneha', lastname: 'Roy', email: 'sneha.roy@example.com', profile_pic: null, score: 84, violation_score: 0, duration_seconds: 3010 },
+
+  // Standings: All Tests Aggregated Overview
+  'test-all': [
+    { rank: 1, attempt_id: 'a-all-1', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 980, violation_score: 0, duration_seconds: 18200 },
+    { rank: 2, attempt_id: 'a-all-2', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 955, violation_score: 0, duration_seconds: 17400 },
+    { rank: 3, attempt_id: 'a-all-3', user_id: 'u-4', firstname: 'Sneha', lastname: 'Roy', email: 'sneha.roy@example.com', profile_pic: null, score: 920, violation_score: 1, duration_seconds: 19100 },
+    { rank: 4, attempt_id: 'a-all-4', user_id: 'u-5', firstname: 'Vikram', lastname: 'Das', email: 'vikram.das@example.com', profile_pic: null, score: 890, violation_score: 2, duration_seconds: 20400 },
   ],
-  'ts-201': [
-    { rank: 1, attempt_id: 'a-16', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 285, violation_score: 0, duration_seconds: 7800 },
-    { rank: 2, attempt_id: 'a-17', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 278, violation_score: 0, duration_seconds: 8700 },
-    { rank: 3, attempt_id: 'a-18', user_id: 'u-4', firstname: 'Sneha', lastname: 'Roy', email: 'sneha.roy@example.com', profile_pic: null, score: 260, violation_score: 2, duration_seconds: 9600 },
+
+  // Single Test: t-101 All Sets
+  't-101': [
+    { rank: 1, attempt_id: 'a-12', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 195, violation_score: 0, duration_seconds: 4800 },
+    { rank: 2, attempt_id: 'a-13', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 188, violation_score: 0, duration_seconds: 4950 },
+    { rank: 3, attempt_id: 'a-14', user_id: 'u-3', firstname: 'Rohan', lastname: 'Verma', email: 'rohan.v@example.com', profile_pic: null, score: 175, violation_score: 1, duration_seconds: 5300 },
+  ],
+  // Specific Test Sets under t-101
+  'ts-101-1': [
+    { rank: 1, attempt_id: 'a-15', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 100, violation_score: 0, duration_seconds: 2300 },
+    { rank: 2, attempt_id: 'a-16', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 94, violation_score: 0, duration_seconds: 2450 },
+  ],
+  'ts-101-2': [
+    { rank: 1, attempt_id: 'a-17', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 94, violation_score: 0, duration_seconds: 2500 },
+    { rank: 2, attempt_id: 'a-18', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 95, violation_score: 0, duration_seconds: 2500 },
+  ],
+
+  // Single Test: t-102 All Sets
+  't-102': [
+    { rank: 1, attempt_id: 'a-19', user_id: 'u-4', firstname: 'Sneha', lastname: 'Roy', email: 'sneha.roy@example.com', profile_pic: null, score: 190, violation_score: 0, duration_seconds: 4500 },
+    { rank: 2, attempt_id: 'a-20', user_id: 'u-5', firstname: 'Vikram', lastname: 'Das', email: 'vikram.das@example.com', profile_pic: null, score: 182, violation_score: 1, duration_seconds: 4800 },
+  ],
+  'ts-102-1': [
+    { rank: 1, attempt_id: 'a-21', user_id: 'u-4', firstname: 'Sneha', lastname: 'Roy', email: 'sneha.roy@example.com', profile_pic: null, score: 98, violation_score: 0, duration_seconds: 2200 },
+  ],
+  'ts-102-2': [
+    { rank: 1, attempt_id: 'a-22', user_id: 'u-5', firstname: 'Vikram', lastname: 'Das', email: 'vikram.das@example.com', profile_pic: null, score: 92, violation_score: 0, duration_seconds: 2600 },
   ],
 }
 
 export default function LeaderboardView() {
   const [section, setSection] = useState<LeaderboardSection>('contest')
   const [selectedContestId, setSelectedContestId] = useState<string>(MOCK_CONTESTS[0].id)
-  const [currentScope, setCurrentScope] = useState<CurrentPositionScope>('test')
-  const [selectedTestId, setSelectedTestId] = useState<string>(MOCK_TESTS[0].id)
-  const [selectedSetId, setSelectedSetId] = useState<string>(MOCK_TEST_SETS[0].id)
+  
+  // Default for tests in standings is "all"
+  const [selectedTestId, setSelectedTestId] = useState<string>('all')
+  // Default for test sets is "all"
+  const [selectedSetId, setSelectedSetId] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
-
-  const activeKey =
-    section === 'contest'
-      ? selectedContestId
-      : currentScope === 'test'
-      ? selectedTestId
-      : selectedSetId
-
-  const rawList = MOCK_DATA[activeKey] || []
-  const totalParticipants = rawList.length
-  const topThree = rawList.slice(0, 3)
 
   const isContestSection = section === 'contest'
 
-  // If search is active -> filter list
-  // If Contest -> skip top 3 (they are in the podium)
-  // If Current Position (Tests / Sets) -> show entire list in table
+  // Determine available child test sets
+  const availableTestSets = selectedTestId !== 'all' ? MOCK_TEST_SETS[selectedTestId] || [] : []
+
+  // Resolve raw data key
+  const rawList = useMemo(() => {
+    if (isContestSection) {
+      return MOCK_DATA[selectedContestId] || []
+    }
+    if (selectedTestId === 'all') {
+      return MOCK_DATA['test-all'] || []
+    }
+    if (selectedSetId === 'all') {
+      return MOCK_DATA[selectedTestId] || []
+    }
+    return MOCK_DATA[selectedSetId] || []
+  }, [isContestSection, selectedContestId, selectedTestId, selectedSetId])
+
+  const totalParticipants = rawList.length
+  const topThree = rawList.slice(0, 3)
+
+  // Title resolvers for custom select label rendering
+  const selectedContestTitle =
+    MOCK_CONTESTS.find((c) => c.id === selectedContestId)?.title || 'Select contest'
+
+  const selectedTestTitle =
+    selectedTestId === 'all'
+      ? 'All Tests (Aggregated)'
+      : MOCK_TESTS.find((t) => t.id === selectedTestId)?.title || 'Select test'
+
+  const selectedSetTitle =
+    selectedSetId === 'all'
+      ? 'All Test Sets'
+      : availableTestSets.find((ts) => ts.id === selectedSetId)?.title || 'Select test set'
+
+  // Table filtering logic
   const displayedTableList = searchQuery
     ? rawList.filter((entry) => {
         const q = searchQuery.toLowerCase().trim()
@@ -155,19 +209,19 @@ export default function LeaderboardView() {
         </Tabs>
       </div>
 
-      {/* 2. Control Toolbar */}
+      {/* 2. Control Toolbar (All items strictly on the same line) */}
       <Card className="p-3.5 border-slate-200 bg-white shadow-xs rounded-2xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5">
+        <div className="flex flex-row items-center justify-between gap-3 w-full">
           
           {/* Target Assessment Selectors */}
-          <div className="flex-1 flex flex-wrap items-center gap-3">
+          <div className="flex-1 min-w-0">
             {isContestSection ? (
-              <div className="flex items-center gap-2 w-full md:max-w-md">
-                <span className="text-xs font-bold text-slate-700 shrink-0 flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+              <div className="flex flex-row items-center gap-2.5 w-full min-w-0">
+                <span className="text-xs font-bold text-slate-700 shrink-0 hidden sm:flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                   Contest:
                 </span>
-                <div className="w-full min-w-0">
+                <div className="w-full min-w-0 flex-1">
                   <Select
                     value={selectedContestId}
                     onValueChange={(val) => {
@@ -175,12 +229,14 @@ export default function LeaderboardView() {
                       setSearchQuery('')
                     }}
                   >
-                    <SelectTrigger className="h-10 text-xs font-semibold rounded-xl border-slate-200 bg-slate-50/70 text-slate-900 hover:bg-slate-50 focus:ring-1 focus:ring-indigo-500">
-                      <SelectValue placeholder="Select contest" />
+                    <SelectTrigger className="h-10 w-full text-xs font-semibold rounded-xl border-slate-200 bg-slate-50/70 text-slate-900 hover:bg-slate-50 focus:ring-1 focus:ring-indigo-500 truncate">
+                      <SelectValue placeholder="Select contest">
+                        {selectedContestTitle}
+                      </SelectValue>
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl border-slate-200 bg-white">
+                    <SelectContent className="max-w-[90vw] md:max-w-2xl rounded-xl border-slate-200 bg-white shadow-lg">
                       {MOCK_CONTESTS.map((contest) => (
-                        <SelectItem key={contest.id} value={contest.id} className="text-xs py-2 cursor-pointer font-medium">
+                        <SelectItem key={contest.id} value={contest.id} className="text-xs py-2.5 cursor-pointer font-medium">
                           {contest.title}
                         </SelectItem>
                       ))}
@@ -189,63 +245,80 @@ export default function LeaderboardView() {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-wrap items-center gap-2.5 w-full">
-                <Tabs
-                  value={currentScope}
-                  onValueChange={(val) => {
-                    setCurrentScope(val as CurrentPositionScope)
-                    setSearchQuery('')
-                  }}
-                  className="shrink-0"
-                >
-                  <TabsList className="grid grid-cols-2 h-10 rounded-xl bg-slate-100 p-1 w-44">
-                    <TabsTrigger value="test" className="text-xs font-bold px-2 gap-1 data-[state=active]:bg-white data-[state=active]:text-slate-900 text-slate-600">
-                      <FileText className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
-                      <span>Tests</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="test_set" className="text-xs font-bold px-2 gap-1 data-[state=active]:bg-white data-[state=active]:text-slate-900 text-slate-600">
-                      <Layers className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                      <span>Sets</span>
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-
-                <div className="w-full sm:w-64 min-w-0">
+              <div className="flex flex-row items-center gap-2.5 w-full min-w-0">
+                
+                {/* 1. Test Selector */}
+                <div className="flex-1 min-w-0">
                   <Select
-                    value={currentScope === 'test' ? selectedTestId : selectedSetId}
+                    value={selectedTestId}
                     onValueChange={(val) => {
-                      if (currentScope === 'test') setSelectedTestId(val)
-                      else setSelectedSetId(val)
+                      setSelectedTestId(val)
+                      setSelectedSetId('all') // Reset test set to 'all' whenever test changes
                       setSearchQuery('')
                     }}
                   >
-                    <SelectTrigger className="h-10 text-xs font-semibold rounded-xl border-slate-200 bg-slate-50/70 text-slate-900 hover:bg-slate-50 focus:ring-1 focus:ring-indigo-500 truncate">
-                      <SelectValue placeholder="Select target..." />
+                    <SelectTrigger className="h-10 w-full text-xs font-semibold rounded-xl border-slate-200 bg-slate-50/70 text-slate-900 hover:bg-slate-50 focus:ring-1 focus:ring-indigo-500 truncate">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <FileText className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                        <SelectValue placeholder="Select test...">
+                          {selectedTestTitle}
+                        </SelectValue>
+                      </div>
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl border-slate-200 bg-white">
-                      {currentScope === 'test'
-                        ? MOCK_TESTS.map((t) => (
-                            <SelectItem key={t.id} value={t.id} className="text-xs py-2 cursor-pointer font-medium">
-                              {t.title}
-                            </SelectItem>
-                          ))
-                        : MOCK_TEST_SETS.map((ts) => (
-                            <SelectItem key={ts.id} value={ts.id} className="text-xs py-2 cursor-pointer font-medium">
-                              {ts.title}
-                            </SelectItem>
-                          ))}
+                    <SelectContent className="max-w-[90vw] md:max-w-2xl rounded-xl border-slate-200 bg-white shadow-lg">
+                      <SelectItem value="all" className="text-xs py-2.5 cursor-pointer font-bold text-indigo-900">
+                        All Tests (Overview)
+                      </SelectItem>
+                      {MOCK_TESTS.map((t) => (
+                        <SelectItem key={t.id} value={t.id} className="text-xs py-2.5 cursor-pointer font-medium">
+                          {t.title}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* 2. Test Set Selector (Rendered conditionally ONLY when a specific test is selected) */}
+                {selectedTestId !== 'all' && (
+                  <div className="flex-1 min-w-0">
+                    <Select
+                      value={selectedSetId}
+                      onValueChange={(val) => {
+                        setSelectedSetId(val)
+                        setSearchQuery('')
+                      }}
+                    >
+                      <SelectTrigger className="h-10 w-full text-xs font-semibold rounded-xl border-slate-200 bg-slate-50/70 text-slate-900 hover:bg-slate-50 focus:ring-1 focus:ring-indigo-500 truncate">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <Layers className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                          <SelectValue placeholder="Select test set...">
+                            {selectedSetTitle}
+                          </SelectValue>
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent className="max-w-[90vw] md:max-w-2xl rounded-xl border-slate-200 bg-white shadow-lg">
+                        <SelectItem value="all" className="text-xs py-2.5 cursor-pointer font-bold text-amber-900">
+                          All Test Sets
+                        </SelectItem>
+                        {availableTestSets.map((ts) => (
+                          <SelectItem key={ts.id} value={ts.id} className="text-xs py-2.5 cursor-pointer font-medium">
+                            {ts.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
               </div>
             )}
           </div>
 
-          {/* Search Input with Clear Button */}
-          <div className="relative w-full md:w-72 shrink-0">
+          {/* Search Input */}
+          <div className="relative w-44 sm:w-60 md:w-64 shrink-0">
             <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
             <Input
-              placeholder="Search candidate name or email..."
+              placeholder="Search candidate..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-10 text-xs pl-9 pr-8 rounded-xl border-slate-200 bg-slate-50/70 text-slate-900 placeholder:text-slate-400 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-indigo-500"
@@ -266,7 +339,7 @@ export default function LeaderboardView() {
         </div>
       </Card>
 
-      {/* 3. Top 3 Podium (Rendered strictly for Contests when not searching) */}
+      {/* 3. Top 3 Podium (Contest Mode Only) */}
       {isContestSection && !searchQuery && topThree.length > 0 && (
         <LeaderboardPodium topThree={topThree} />
       )}
@@ -279,7 +352,11 @@ export default function LeaderboardView() {
               ? 'Search Results'
               : isContestSection
               ? 'Other Standings (Rank #4+)'
-              : 'All Standings'}
+              : selectedTestId === 'all'
+              ? 'All Tests Cumulative Standings'
+              : selectedSetId === 'all'
+              ? `Standings for ${selectedTestTitle}`
+              : `Standings for ${selectedSetTitle}`}
           </h3>
           {!searchQuery && (
             <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-200 text-xs font-bold px-2 py-0">
