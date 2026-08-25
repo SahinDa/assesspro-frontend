@@ -34,8 +34,8 @@ export default function LeaderboardTable({ rankings, currentUserId }: Leaderboar
     return (
       <Card className="text-center py-12 px-4 border-dashed border-slate-200 bg-white shadow-none space-y-2 rounded-2xl">
         <Trophy className="h-8 w-8 text-slate-300 mx-auto" />
-        <p className="text-sm font-bold text-slate-700">No participants found</p>
-        <p className="text-xs text-slate-500">Standings will appear once candidates complete their attempts.</p>
+        <div className="text-sm font-bold text-slate-700">No participants found</div>
+        <div className="text-xs text-slate-500">Standings will appear once candidates complete their attempts.</div>
       </Card>
     )
   }
@@ -78,19 +78,19 @@ export default function LeaderboardTable({ rankings, currentUserId }: Leaderboar
                   {/* Candidate Name & Email */}
                   <TableCell className="py-3">
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-9 w-9 border border-slate-200 shrink-0">
-                        <AvatarImage src={entry.profile_pic ?? undefined} alt={entry.firstname} />
-                        <AvatarFallback className="bg-indigo-100 text-indigo-900 text-xs font-bold">
+                      <Avatar className="h-9 w-9 rounded-full border border-slate-200 shrink-0 overflow-hidden aspect-square">
+                        <AvatarImage className="rounded-full object-cover w-full h-full aspect-square" src={entry.profile_pic ?? undefined} alt={entry.firstname} />
+                        <AvatarFallback className="h-full w-full rounded-full bg-indigo-100 text-indigo-900 text-xs font-bold flex items-center justify-center aspect-square">
                           {entry.firstname.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 max-w-[200px] sm:max-w-[260px]">
-                        <span className="truncate block font-bold text-slate-900 text-sm">
+                        <div className="truncate font-bold text-slate-900 text-sm">
                           {entry.firstname} {entry.lastname} {isCurrentUser && '(You)'}
-                        </span>
-                        <span className="text-xs text-slate-500 font-normal truncate block">
+                        </div>
+                        <div className="text-xs text-slate-500 font-normal truncate">
                           {entry.email}
-                        </span>
+                        </div>
                       </div>
                     </div>
                   </TableCell>
@@ -101,11 +101,11 @@ export default function LeaderboardTable({ rankings, currentUserId }: Leaderboar
                   </TableCell>
 
                   {/* Duration */}
-                  <TableCell className="py-3 text-slate-700 font-mono font-semibold text-xs">
-                    <div className="flex items-center gap-1.5">
+                  <TableCell className="py-3">
+                    <Badge variant="outline" className="text-xs font-mono font-semibold text-slate-700 bg-slate-50 border-slate-200 py-0.5 px-2 gap-1.5 inline-flex items-center">
                       <Clock className="h-3.5 w-3.5 text-slate-400" />
-                      <span>{formatDuration(entry.duration_seconds)}</span>
-                    </div>
+                      {formatDuration(entry.duration_seconds)}
+                    </Badge>
                   </TableCell>
 
                   {/* Integrity Badge */}
@@ -138,9 +138,9 @@ export default function LeaderboardTable({ rankings, currentUserId }: Leaderboar
       {/* Pagination Footer */}
       {rankings.length > pageSize && (
         <div className="p-3.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 flex-wrap gap-2">
-          <span>
-            Showing <strong>{(currentPage - 1) * pageSize + 1}</strong>–<strong>{Math.min(currentPage * pageSize, rankings.length)}</strong> of <strong>{rankings.length}</strong> participants
-          </span>
+          <div className="text-xs text-slate-600">
+            Showing <span className="font-bold text-slate-900">{(currentPage - 1) * pageSize + 1}</span>–<span className="font-bold text-slate-900">{Math.min(currentPage * pageSize, rankings.length)}</span> of <span className="font-bold text-slate-900">{rankings.length}</span> participants
+          </div>
           <div className="flex items-center gap-1.5">
             <Button
               variant="outline"
@@ -151,9 +151,9 @@ export default function LeaderboardTable({ rankings, currentUserId }: Leaderboar
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-xs font-bold text-slate-800 px-2 font-mono">
+            <Badge variant="outline" className="text-xs font-bold text-slate-800 px-2.5 py-1 border-slate-200 bg-slate-50 font-mono">
               {currentPage} / {totalPages}
-            </span>
+            </Badge>
             <Button
               variant="outline"
               size="sm"
