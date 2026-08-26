@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { 
   LayoutDashboard, FolderKanban, Trophy, CreditCard, 
   Building2, Users2, ShieldCheck, Settings, LogOut,Bookmark,
-  Layers, BarChart3,Bell,
+  Layers, BarChart3,Bell,Receipt,
 } from 'lucide-react'
 import { UserRole, type UserRoleType } from '@/config/enums'
 import { cn } from '@/lib/utils'
@@ -21,6 +21,8 @@ export function Sidebar({ role }: SidebarProps) {
         { label: 'Platform Overview', path: '/admin/overview', icon: LayoutDashboard },
         { label: 'Organizations', path: '/admin/organizations', icon: Building2 },
         { label: 'Global Students', path: '/admin/students', icon: Users2 },
+        { label: 'Platform Plans', path: '/admin/plans', icon: CreditCard },
+        { label: 'Transactions', path: '/admin/transactions', icon: Receipt },
         { label: 'System Analytics', path: '/admin/analytics', icon: BarChart3 },
         { label: 'Platform Settings', path: '/admin/settings', icon: Settings },
       ]
@@ -32,11 +34,14 @@ export function Sidebar({ role }: SidebarProps) {
         { label: 'Bookmarks', path: '/dashboard/bookmarks', icon: Bookmark },
         { label: 'Leaderboards', path: '/dashboard/leaderboards', icon: Trophy },
         { label: 'Notifications', path: '/dashboard/notifications', icon: Bell },
-        { label: 'Billing & Plan', path: '/dashboard/billing', icon: CreditCard },
+        { label: 'Subscription Plans', path: '/dashboard/plans', icon: CreditCard },
+        { label: 'Billing & Ledger', path: '/dashboard/billing', icon: Receipt },
       ]
     : [
         { label: 'My Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
         { label: 'Tests', path: '/student/modules', icon: FolderKanban},
+        { label: 'Plans & Pricing', path: '/student/plans', icon: CreditCard },
+        { label: 'My Transactions', path: '/student/transactions', icon: Receipt },
         { label: 'Performance', path: '/student/performance', icon: BarChart3 },
         { label: 'Leaderboard', path: '/student/leaderboard', icon: Trophy },
       ]
