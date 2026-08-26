@@ -35,7 +35,7 @@ export function Sidebar({ role }: SidebarProps) {
         { label: 'Leaderboards', path: '/dashboard/leaderboards', icon: Trophy },
         { label: 'Notifications', path: '/dashboard/notifications', icon: Bell },
         { label: 'Subscription Plans', path: '/dashboard/plans', icon: CreditCard },
-        { label: 'Billing & Ledger', path: '/dashboard/billing', icon: Receipt },
+        { label: 'Transactions', path: '/dashboard/billing', icon: Receipt },
       ]
     : [
         { label: 'My Dashboard', path: '/student/dashboard', icon: LayoutDashboard },

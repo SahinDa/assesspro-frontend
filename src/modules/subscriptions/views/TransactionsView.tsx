@@ -69,7 +69,7 @@ export default function TransactionsView({
               Student Payments ({managedStudentTransactions.length})
             </TabsTrigger>
             <TabsTrigger value="org_billing" className="text-xs font-bold rounded-lg">
-              Organization Platform Invoices
+              My Transactions
             </TabsTrigger>
           </TabsList>
 
