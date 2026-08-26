@@ -51,10 +51,18 @@ export default function TransactionsView({
       <header className="space-y-4">
         <CardHeader className="p-0 space-y-1">
           <CardTitle className="text-2xl font-black tracking-tight text-foreground">
-            Billing & Transaction History
+            {userRole === UserRole.STUDENT
+              ? 'Transaction History'
+              : userRole === UserRole.ORGANIZATION
+                ? 'Transactions & Invoices'
+                : 'Platform Ledger'}
           </CardTitle>
           <CardDescription className="text-xs text-muted-foreground whitespace-nowrap">
-            Review ledger receipts, payment statuses, and Razorpay transaction IDs.
+            {userRole === UserRole.STUDENT
+              ? 'View payment receipts, subscription passes, and transaction details.'
+              : userRole === UserRole.ORGANIZATION
+                ? 'Review student purchases and your organization subscription invoices.'
+                : 'Audit platform payments, gateway order IDs, and revenue records.'}
           </CardDescription>
         </CardHeader>
         <Separator />
