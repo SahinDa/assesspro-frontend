@@ -83,6 +83,8 @@ export default function PlanFormDialog({
 
   // Sync form state directly on open/edit
   useEffect(() => {
+    if (!isOpen) return
+
     setPricingError(null)
     if (planToEdit) {
       const existingFeatures = planToEdit.features || {}
@@ -121,7 +123,7 @@ export default function PlanFormDialog({
         features: initialFeatures,
       })
     }
-  }, [planToEdit, isPlatformPlan, reset])
+  }, [isOpen, planToEdit, isPlatformPlan, reset])
 
   const handleFormSubmit = (data: any) => {
     const monthlyPrice = data.pricing?.['1']
@@ -155,9 +157,10 @@ export default function PlanFormDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent  className="w-[calc(100%-2rem)] sm:max-w-lg md:max-w-xl max-h-[85vh] h-auto overflow-y-auto rounded-3xl p-5 sm:p-7 shadow-2xl border border-border/80 my-auto overscroll-contain"
+      <DialogContent
+        className="w-[calc(100%-2rem)] sm:max-w-lg md:max-w-xl max-h-[85vh] h-auto overflow-y-auto rounded-3xl p-5 sm:p-7 shadow-2xl border border-border/80 my-auto overscroll-contain"
         style={{ maxHeight: '85vh', overflowY: 'auto' }}
-        >
+      >
         <DialogHeader>
           <DialogTitle className="text-xl font-black">
             {planToEdit ? 'Configure Subscription Plan' : 'Create Subscription Plan'}
