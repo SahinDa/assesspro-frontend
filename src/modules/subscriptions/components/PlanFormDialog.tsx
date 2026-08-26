@@ -155,7 +155,9 @@ export default function PlanFormDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
+      <DialogContent  className="w-[calc(100%-2rem)] sm:max-w-lg md:max-w-xl max-h-[85vh] h-auto overflow-y-auto rounded-3xl p-5 sm:p-7 shadow-2xl border border-border/80 my-auto overscroll-contain"
+        style={{ maxHeight: '85vh', overflowY: 'auto' }}
+        >
         <DialogHeader>
           <DialogTitle className="text-xl font-black">
             {planToEdit ? 'Configure Subscription Plan' : 'Create Subscription Plan'}

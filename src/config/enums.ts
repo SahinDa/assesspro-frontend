@@ -145,6 +145,10 @@ export enum PlatformSubscriptionFeatureKey {
   MAX_TESTS = 'max_tests',
   MAX_SETS_PER_TEST = 'max_sets_per_test',
   MAX_QUESTIONS_PER_SET = 'max_questions_per_set',
+  MAX_USERS1 = 'max_users1',
+  MAX_TESTS1 = 'max_tests1',
+  MAX_SETS_PER_TEST1 = 'max_sets_per_test1',
+  MAX_QUESTIONS_PER_SET1 = 'max_questions_per_set1',
 }
 
 export enum OrganizationSubscriptionFeatureKey {
