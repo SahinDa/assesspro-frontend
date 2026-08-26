@@ -37,22 +37,20 @@ export {
 
 // 1. Zod Form Validation Schemas
 export const CreatePlatformPlanDtoSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').max(50),
-  description: z.string().max(255).optional(),
-  features: z.record(z.string(), z.union([z.number(), z.boolean()])),
-  pricing: z.record(z.string(), z.coerce.number().min(0, 'Price must be 0 or greater')),
+  name: z.string().min(1, 'Plan name is required').max(50),
+  description: z.string().max(255).optional().or(z.literal('')),
   currency: z.nativeEnum(SupportedCurrency).default(SupportedCurrency.INR),
+  pricing: z.record(z.string(), z.number().optional().nullable()),
+  features: z.record(z.string(), z.number()),
 })
 
 export const CreateOrganizationPlanDtoSchema = z.object({
-  organization_id: z.string().uuid().optional(),
-  name: z.string().min(2, 'Name must be at least 2 characters').max(50),
-  description: z.string().max(255).optional(),
-  pricing: z.record(z.string(), z.coerce.number().min(0, 'Price must be 0 or greater')),
+  name: z.string().min(1, 'Plan name is required').max(50),
+  description: z.string().max(255).optional().or(z.literal('')),
   currency: z.nativeEnum(SupportedCurrency).default(SupportedCurrency.INR),
-  features: z.record(z.string(), z.union([z.number(), z.boolean()])),
+  pricing: z.record(z.string(), z.number().optional().nullable()),
+  features: z.record(z.string(), z.number()),
 })
-
 // 2. TypeScript Entity Interfaces (Matching TypeORM backend)
 export interface PlatformPlanEntity {
   plan_id: string

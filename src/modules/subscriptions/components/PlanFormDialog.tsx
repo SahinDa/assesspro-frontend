@@ -126,7 +126,7 @@ export default function PlanFormDialog({
   const handleFormSubmit = (data: any) => {
     const monthlyPrice = data.pricing?.['1']
 
-    if (typeof monthlyPrice !== 'number' || isNaN(monthlyPrice) || monthlyPrice <= 0) {
+    if (monthlyPrice === undefined || monthlyPrice === null || isNaN(Number(monthlyPrice)) || Number(monthlyPrice) <= 0) {
       setPricingError('Monthly base price is required and must be greater than 0.')
       return
     }
@@ -136,17 +136,18 @@ export default function PlanFormDialog({
       '1': Number(monthlyPrice),
     }
 
-    if (typeof data.pricing?.['2'] === 'number' && !isNaN(data.pricing['2']) && data.pricing['2'] > 0) {
+    if (data.pricing?.['2'] !== undefined && !isNaN(Number(data.pricing['2'])) && Number(data.pricing['2']) > 0) {
       cleanedPricing['2'] = Number(data.pricing['2'])
     }
 
-    if (typeof data.pricing?.['3'] === 'number' && !isNaN(data.pricing['3']) && data.pricing['3'] > 0) {
+    if (data.pricing?.['3'] !== undefined && !isNaN(Number(data.pricing['3'])) && Number(data.pricing['3']) > 0) {
       cleanedPricing['3'] = Number(data.pricing['3'])
     }
 
     setPricingError(null)
     onSubmit({
       ...data,
+      description: data.description?.trim() || undefined,
       pricing: cleanedPricing,
     })
     onOpenChange(false)
@@ -221,7 +222,9 @@ export default function PlanFormDialog({
                   min={1}
                   placeholder="e.g. 999"
                   className="h-9 rounded-xl text-xs font-mono"
-                  {...register('pricing.1', { valueAsNumber: true })}
+                  {...register('pricing.1', {
+                    setValueAs: (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+                  })}
                 />
               </div>
 
@@ -234,7 +237,9 @@ export default function PlanFormDialog({
                   min={1}
                   placeholder="Optional"
                   className="h-9 rounded-xl text-xs font-mono"
-                  {...register('pricing.2', { valueAsNumber: true })}
+                  {...register('pricing.2', {
+                    setValueAs: (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+                  })}
                 />
               </div>
 
@@ -247,7 +252,9 @@ export default function PlanFormDialog({
                   min={1}
                   placeholder="Optional"
                   className="h-9 rounded-xl text-xs font-mono"
-                  {...register('pricing.3', { valueAsNumber: true })}
+                  {...register('pricing.3', {
+                    setValueAs: (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+                  })}
                 />
               </div>
             </div>
@@ -276,7 +283,9 @@ export default function PlanFormDialog({
                     type="number"
                     min={0}
                     className="h-8 text-xs font-mono rounded-lg bg-card"
-                    {...register(`features.${key}`, { valueAsNumber: true })}
+                    {...register(`features.${key}`, {
+                      setValueAs: (v) => (v === '' || v === null || v === undefined ? 0 : Number(v)),
+                    })}
                   />
                 </div>
               ))}
