@@ -151,3 +151,11 @@ export enum OrganizationSubscriptionFeatureKey {
   MAX_TEST_SETS = 'max_test_sets',
   MAX_REATTEMPTS = 'max_reattempts',
 }
+
+export enum PlatformPlanLimit {
+  MAX_ACTIVE_PLANS = 3,
+}
+
+export enum OrganizationPlanLimit {
+  MAX_ACTIVE_PLANS = 3,
+}
