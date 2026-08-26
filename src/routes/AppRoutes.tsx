@@ -16,6 +16,7 @@ import OrgStudentsView from '@/modules/students/views/OrgStudentsView'
 const BookmarksView = lazy(() => import('@/modules/bookmarks/views/BookmarksView'))
 const LeaderboardView = lazy(() => import('@/modules/leaderboards/views/LeaderboardView'))
 import NotificationsView from '@/modules/notifications/views/NotificationsView'
+import { PlansView, TransactionsView } from '@/modules/subscriptions'
 
 export default function AppRoutes() {
   return (
@@ -43,18 +44,24 @@ export default function AppRoutes() {
         <Route path="bookmarks" element={<BookmarksView />} />
         <Route path="leaderboards" element={<LeaderboardView />} />
         <Route path="notifications" element={<NotificationsView />} />
+        <Route path="plans" element={<PlansView userRole={UserRole.ORGANIZATION} />} />
+        <Route path="billing" element={<TransactionsView userRole={UserRole.ORGANIZATION} />} />
       </Route>
 
       {/* 2. Student Dashboard */}
       <Route path="/student" element={<AppLayout role={UserRole.STUDENT} />}>
         <Route index element={<Navigate to="/student/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardView role={UserRole.STUDENT} />} />
+        <Route path="plans" element={<PlansView userRole={UserRole.STUDENT} />} />
+        <Route path="transactions" element={<TransactionsView userRole={UserRole.STUDENT} />} />
       </Route>
 
       {/* 3. Super Admin Dashboard */}
       <Route path="/admin" element={<AppLayout role={UserRole.ADMIN} />}>
         <Route index element={<Navigate to="/admin/overview" replace />} />
         <Route path="overview" element={<DashboardView role={UserRole.ADMIN} />} />
+        <Route path="plans" element={<PlansView userRole={UserRole.ADMIN} />} />
+        <Route path="transactions" element={<TransactionsView userRole={UserRole.ADMIN} />} />
       </Route>
 
       {/* Fallback for undefined routes */}
