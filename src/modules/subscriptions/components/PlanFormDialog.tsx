@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Sliders } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -12,14 +13,19 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+
+// Source of truth from config
+import {
+  PlatformSubscriptionFeatureKey,
+  OrganizationSubscriptionFeatureKey,
+} from '@/config/enums'
+
 import {
   CreatePlatformPlanDtoSchema,
   CreateOrganizationPlanDtoSchema,
   type PlatformPlanEntity,
   type OrganizationPlanEntity,
   SupportedCurrency,
-  PlatformSubscriptionFeatureKey,
-  OrganizationSubscriptionFeatureKey,
 } from '../utils/subscriptionValidation'
 
 interface PlanFormDialogProps {
@@ -30,6 +36,15 @@ interface PlanFormDialogProps {
   onSubmit: (formData: any) => void
 }
 
+const DEFAULT_ENUM_VALUES: Record<string, number> = {
+  [PlatformSubscriptionFeatureKey.MAX_USERS]: 500,
+  [PlatformSubscriptionFeatureKey.MAX_TESTS]: 100,
+  [PlatformSubscriptionFeatureKey.MAX_SETS_PER_TEST]: 5,
+  [PlatformSubscriptionFeatureKey.MAX_QUESTIONS_PER_SET]: 100,
+  [OrganizationSubscriptionFeatureKey.MAX_TEST_SETS]: 20,
+  [OrganizationSubscriptionFeatureKey.MAX_REATTEMPTS]: 2,
+}
+
 export default function PlanFormDialog({
   isOpen,
   onOpenChange,
@@ -38,6 +53,13 @@ export default function PlanFormDialog({
   onSubmit,
 }: PlanFormDialogProps) {
   const schema = isPlatformPlan ? CreatePlatformPlanDtoSchema : CreateOrganizationPlanDtoSchema
+  const [pricingError, setPricingError] = useState<string | null>(null)
+
+  // Strictly extract keys from the active Enum
+  const targetEnum = isPlatformPlan
+    ? PlatformSubscriptionFeatureKey
+    : OrganizationSubscriptionFeatureKey
+  const enumKeys = Object.values(targetEnum)
 
   const {
     register,
@@ -52,44 +74,87 @@ export default function PlanFormDialog({
       currency: SupportedCurrency.INR,
       pricing: {
         '1': 999,
-        '3': 9999,
+        '2': '' as any,
+        '3': 8999,
       },
-      features: isPlatformPlan
-        ? {
-            [PlatformSubscriptionFeatureKey.MAX_USERS]: 500,
-            [PlatformSubscriptionFeatureKey.MAX_TESTS]: 100,
-            [PlatformSubscriptionFeatureKey.MAX_SETS_PER_TEST]: 5,
-            [PlatformSubscriptionFeatureKey.MAX_QUESTIONS_PER_SET]: 100,
-          }
-        : {
-            [OrganizationSubscriptionFeatureKey.MAX_TEST_SETS]: 20,
-            [OrganizationSubscriptionFeatureKey.MAX_REATTEMPTS]: 2,
-          },
+      features: {},
     },
   })
 
+  // Sync form state directly on open/edit
   useEffect(() => {
+    setPricingError(null)
     if (planToEdit) {
+      const existingFeatures = planToEdit.features || {}
+      const populatedFeatures: Record<string, number> = {}
+
+      enumKeys.forEach((key) => {
+        populatedFeatures[key] = Number(existingFeatures[key] ?? DEFAULT_ENUM_VALUES[key] ?? 10)
+      })
+
       reset({
         name: planToEdit.name,
         description: planToEdit.description || '',
         currency: (planToEdit.currency as SupportedCurrency) || SupportedCurrency.INR,
-        pricing: Object.fromEntries(
-          Object.entries(planToEdit.pricing).map(([k, v]) => [String(k), Number(v)])
-        ),
-        features: planToEdit.features as any,
+        pricing: {
+          '1': planToEdit.pricing?.['1'] !== undefined ? Number(planToEdit.pricing['1']) : ('' as any),
+          '2': planToEdit.pricing?.['2'] !== undefined ? Number(planToEdit.pricing['2']) : ('' as any),
+          '3': planToEdit.pricing?.['3'] !== undefined ? Number(planToEdit.pricing['3']) : ('' as any),
+        },
+        features: populatedFeatures,
+      })
+    } else {
+      const initialFeatures: Record<string, number> = {}
+      enumKeys.forEach((key) => {
+        initialFeatures[key] = DEFAULT_ENUM_VALUES[key] ?? 10
+      })
+
+      reset({
+        name: '',
+        description: '',
+        currency: SupportedCurrency.INR,
+        pricing: {
+          '1': 999,
+          '2': '' as any,
+          '3': 8999,
+        },
+        features: initialFeatures,
       })
     }
-  }, [planToEdit, reset])
+  }, [planToEdit, isPlatformPlan, reset])
 
   const handleFormSubmit = (data: any) => {
-    onSubmit(data)
+    const monthlyPrice = data.pricing?.['1']
+
+    if (typeof monthlyPrice !== 'number' || isNaN(monthlyPrice) || monthlyPrice <= 0) {
+      setPricingError('Monthly base price is required and must be greater than 0.')
+      return
+    }
+
+    // Build pricing payload with mandatory Monthly and optional cycles
+    const cleanedPricing: Record<string, number> = {
+      '1': Number(monthlyPrice),
+    }
+
+    if (typeof data.pricing?.['2'] === 'number' && !isNaN(data.pricing['2']) && data.pricing['2'] > 0) {
+      cleanedPricing['2'] = Number(data.pricing['2'])
+    }
+
+    if (typeof data.pricing?.['3'] === 'number' && !isNaN(data.pricing['3']) && data.pricing['3'] > 0) {
+      cleanedPricing['3'] = Number(data.pricing['3'])
+    }
+
+    setPricingError(null)
+    onSubmit({
+      ...data,
+      pricing: cleanedPricing,
+    })
     onOpenChange(false)
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-xl rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-black">
             {planToEdit ? 'Configure Subscription Plan' : 'Create Subscription Plan'}
@@ -101,10 +166,12 @@ export default function PlanFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 pt-2">
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-5 pt-2">
           {/* Plan Name */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-foreground block">Plan Name</label>
+            <label className="text-xs font-bold text-foreground block">
+              Plan Name <span className="text-destructive">*</span>
+            </label>
             <Input
               placeholder="e.g. Pro Academy Tier"
               className="h-9 rounded-xl text-xs"
@@ -117,7 +184,9 @@ export default function PlanFormDialog({
 
           {/* Description */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-foreground block">Description</label>
+            <label className="text-xs font-bold text-foreground block">
+              Description <span className="text-muted-foreground font-normal text-[11px]">(optional)</span>
+            </label>
             <Textarea
               placeholder="Brief overview of tier capabilities..."
               className="rounded-xl text-xs resize-none"
@@ -131,86 +200,86 @@ export default function PlanFormDialog({
             )}
           </div>
 
-          {/* Pricing Grid */}
+          {/* 3 Billing Cycles - Monthly Required, Others Optional */}
           <div className="space-y-2">
-            <span className="text-xs font-bold text-foreground block">Cycle Pricing (₹ INR)</span>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-foreground block">
+                Cycle Pricing (₹ INR) <span className="text-destructive">*</span>
+              </span>
+              <span className="text-[11px] text-muted-foreground font-medium">
+                Monthly is required; others are optional
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <label className="text-[11px] text-muted-foreground font-semibold block">
-                  Monthly (Cycle 1)
+                  Monthly (1) <span className="text-destructive">*</span>
                 </label>
                 <Input
                   type="number"
-                  min={0}
+                  min={1}
+                  placeholder="e.g. 999"
                   className="h-9 rounded-xl text-xs font-mono"
                   {...register('pricing.1', { valueAsNumber: true })}
                 />
               </div>
+
               <div className="space-y-1">
                 <label className="text-[11px] text-muted-foreground font-semibold block">
-                  Yearly (Cycle 3)
+                  Quarterly (2) <span className="text-muted-foreground font-normal text-[10px]">(optional)</span>
                 </label>
                 <Input
                   type="number"
-                  min={0}
+                  min={1}
+                  placeholder="Optional"
+                  className="h-9 rounded-xl text-xs font-mono"
+                  {...register('pricing.2', { valueAsNumber: true })}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] text-muted-foreground font-semibold block">
+                  Yearly (3) <span className="text-muted-foreground font-normal text-[10px]">(optional)</span>
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  placeholder="Optional"
                   className="h-9 rounded-xl text-xs font-mono"
                   {...register('pricing.3', { valueAsNumber: true })}
                 />
               </div>
             </div>
+            {pricingError && (
+              <p className="text-[11px] text-destructive font-medium mt-1">{pricingError}</p>
+            )}
           </div>
 
-          {/* Feature Limits */}
-          <div className="space-y-2">
-            <span className="text-xs font-bold text-foreground block">Feature Limits & Quotas</span>
-            <div className="grid grid-cols-2 gap-3">
-              {isPlatformPlan ? (
-                <>
-                  <div className="space-y-1">
-                    <label className="text-[11px] text-muted-foreground block">Max Students</label>
-                    <Input
-                      type="number"
-                      className="h-9 rounded-xl text-xs font-mono"
-                      {...register(`features.${PlatformSubscriptionFeatureKey.MAX_USERS}`, {
-                        valueAsNumber: true,
-                      })}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[11px] text-muted-foreground block">Max Tests</label>
-                    <Input
-                      type="number"
-                      className="h-9 rounded-xl text-xs font-mono"
-                      {...register(`features.${PlatformSubscriptionFeatureKey.MAX_TESTS}`, {
-                        valueAsNumber: true,
-                      })}
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="space-y-1">
-                    <label className="text-[11px] text-muted-foreground block">Max Test Sets</label>
-                    <Input
-                      type="number"
-                      className="h-9 rounded-xl text-xs font-mono"
-                      {...register(`features.${OrganizationSubscriptionFeatureKey.MAX_TEST_SETS}`, {
-                        valueAsNumber: true,
-                      })}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[11px] text-muted-foreground block">Max Reattempts</label>
-                    <Input
-                      type="number"
-                      className="h-9 rounded-xl text-xs font-mono"
-                      {...register(`features.${OrganizationSubscriptionFeatureKey.MAX_REATTEMPTS}`, {
-                        valueAsNumber: true,
-                      })}
-                    />
-                  </div>
-                </>
-              )}
+          {/* Strictly Enum-Driven Feature Quotas */}
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <Sliders className="h-3.5 w-3.5 text-indigo-600" />
+                Feature Quotas & Limits ({enumKeys.length})
+              </span>
+            </div>
+
+            {/* Grid rendering exact enum keys */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {enumKeys.map((key) => (
+                <div key={key} className="space-y-1 p-2.5 rounded-xl border border-border/70 bg-muted/20">
+                  <label className="text-[11px] font-semibold text-foreground capitalize truncate block">
+                    {key.replace(/_/g, ' ')}
+                  </label>
+                  <Input
+                    type="number"
+                    min={0}
+                    className="h-8 text-xs font-mono rounded-lg bg-card"
+                    {...register(`features.${key}`, { valueAsNumber: true })}
+                  />
+                </div>
+              ))}
             </div>
           </div>
 
@@ -227,7 +296,7 @@ export default function PlanFormDialog({
             <Button
               type="submit"
               size="sm"
-              className="rounded-xl text-xs font-bold h-9 bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="rounded-xl text-xs font-bold h-9 bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
             >
               {planToEdit ? 'Update Plan' : 'Publish Plan'}
             </Button>
