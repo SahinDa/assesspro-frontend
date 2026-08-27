@@ -1,6 +1,3 @@
-// src/modules/tests/views/TestSetDetailsView.tsx
-
-import { useState } from 'react'
 import {
   ArrowLeft,
   Clock,
@@ -8,7 +5,6 @@ import {
   Award,
   Edit3,
   Eye,
-  CheckCircle2,
   FileQuestion,
   Plus,
 } from 'lucide-react'
@@ -20,27 +16,27 @@ import { CorrectAnswer } from '@/config/enums'
 
 interface TestSetDetailsViewProps {
   testSet: TestSetItem
-  testName: string
+  testName?: string
   onBack: () => void
   onEdit: () => void
   onPreview?: () => void
 }
 
+const ENUM_TO_LETTER: Record<number, string> = {
+  [CorrectAnswer.A]: 'A',
+  [CorrectAnswer.B]: 'B',
+  [CorrectAnswer.C]: 'C',
+  [CorrectAnswer.D]: 'D',
+}
+
 export default function TestSetDetailsView({
   testSet,
-  testName,
+  testName = 'Test Series',
   onBack,
   onEdit,
   onPreview,
 }: TestSetDetailsViewProps) {
-  const [activeFilter, setActiveFilter] = useState<'ALL'>('ALL')
-
-  const optionLabels: Record<CorrectAnswer, string> = {
-    [CorrectAnswer.A]: 'Option A',
-    [CorrectAnswer.B]: 'Option B',
-    [CorrectAnswer.C]: 'Option C',
-    [CorrectAnswer.D]: 'Option D',
-  }
+  const questions = testSet?.questions || []
 
   return (
     <div className="space-y-6">
@@ -49,6 +45,7 @@ export default function TestSetDetailsView({
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Button
+              type="button"
               variant="ghost"
               size="sm"
               onClick={onBack}
@@ -62,15 +59,18 @@ export default function TestSetDetailsView({
                 <span className="text-xs text-slate-400">/</span>
                 <span className="text-xs text-slate-500 font-medium">Set Overview</span>
               </div>
-              <h2 className="text-xl font-bold text-slate-900 tracking-tight">{testSet.name}</h2>
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                {testSet?.name || 'Unnamed Set'}
+              </h2>
             </div>
           </div>
         </div>
 
-        {/* Header Action Buttons */}
+        {/* Action Buttons */}
         <div className="flex items-center gap-2">
           {onPreview && (
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={onPreview}
@@ -81,6 +81,7 @@ export default function TestSetDetailsView({
             </Button>
           )}
           <Button
+            type="button"
             size="sm"
             onClick={onEdit}
             className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold h-9 px-3 gap-1.5 shadow-xs cursor-pointer"
@@ -98,7 +99,7 @@ export default function TestSetDetailsView({
             <Clock className="h-3.5 w-3.5 text-indigo-500" />
             <span>Duration</span>
           </div>
-          <p className="text-base font-bold text-slate-900">{testSet.timer_minutes} Mins</p>
+          <p className="text-base font-bold text-slate-900">{testSet?.timer_minutes ?? 0} Mins</p>
         </div>
 
         <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
@@ -106,7 +107,9 @@ export default function TestSetDetailsView({
             <HelpCircle className="h-3.5 w-3.5 text-sky-500" />
             <span>Total Questions</span>
           </div>
-          <p className="text-base font-bold text-slate-900">{testSet.total_questions} Questions</p>
+          <p className="text-base font-bold text-slate-900">
+            {testSet?.total_questions ?? questions.length} Questions
+          </p>
         </div>
 
         <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
@@ -114,7 +117,9 @@ export default function TestSetDetailsView({
             <Award className="h-3.5 w-3.5 text-emerald-500" />
             <span>Marking Scheme</span>
           </div>
-          <p className="text-base font-bold text-emerald-600">+{testSet.positive_marking_value} Marks</p>
+          <p className="text-base font-bold text-emerald-600">
+            +{testSet?.positive_marking_value ?? 1} Marks
+          </p>
         </div>
 
         <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
@@ -123,40 +128,48 @@ export default function TestSetDetailsView({
             <span>Negative Penalty</span>
           </div>
           <p className="text-base font-bold text-rose-600">
-            {testSet.is_negative_marking ? `-${testSet.negative_score_value} Marks` : 'Disabled'}
+            {testSet?.is_negative_marking
+              ? `-${testSet?.negative_score_value} Marks`
+              : 'Disabled'}
           </p>
         </div>
       </div>
 
-      {/* Description / Syllabus Box */}
-      {testSet.description && (
+      {/* Description / Instructions */}
+      {testSet?.description && (
         <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 text-xs text-slate-600 leading-relaxed">
           <strong className="text-slate-800 font-semibold block mb-0.5">Instructions & Syllabus:</strong>
           {testSet.description}
         </div>
       )}
 
-      {/* Question Items Catalog */}
+      {/* Questions Catalog */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-bold text-slate-900">Question Catalog</h3>
-            <Badge variant="outline" className="text-[11px] font-semibold bg-indigo-50 text-indigo-700 border-indigo-100">
-              {testSet.questions?.length || 0} / {testSet.total_questions} Ready
+            <Badge
+              variant="outline"
+              className="text-[11px] font-semibold bg-indigo-50 text-indigo-700 border-indigo-100"
+            >
+              {questions.length} / {testSet?.total_questions ?? questions.length} Ready
             </Badge>
           </div>
         </div>
 
-        {(!testSet.questions || testSet.questions.length === 0) ? (
+        {questions.length === 0 ? (
           <div className="text-center py-12 rounded-2xl border border-dashed border-slate-200 bg-white space-y-3">
             <div className="h-12 w-12 mx-auto rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
               <FileQuestion className="h-6 w-6" />
             </div>
             <div className="space-y-0.5">
               <p className="text-xs font-bold text-slate-800">No Questions Configured</p>
-              <p className="text-[11px] text-slate-500">Add question statements and options to activate this test set.</p>
+              <p className="text-[11px] text-slate-500">
+                Add question statements and options to activate this test set.
+              </p>
             </div>
             <Button
+              type="button"
               onClick={onEdit}
               size="sm"
               className="rounded-xl text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-semibold h-8 px-3 gap-1.5 cursor-pointer"
@@ -167,56 +180,64 @@ export default function TestSetDetailsView({
           </div>
         ) : (
           <div className="space-y-3">
-            {testSet.questions.map((q, idx) => (
-              <Card key={idx} className="rounded-2xl border border-slate-200/80 bg-white shadow-2xs">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-0.5">
-                      Q{idx + 1}
-                    </span>
-                    <Badge variant="outline" className="text-[10px] font-medium text-emerald-700 bg-emerald-50 border-emerald-200">
-                      Correct: Option {optionLabels[q.correct_answer]}
-                    </Badge>
-                  </div>
+            {questions.map((q, idx) => {
+              const letter = ENUM_TO_LETTER[q.correct_answer] || 'A'
 
-                  <p className="text-xs font-semibold text-slate-900 leading-relaxed">
-                    {q.question_text}
-                  </p>
+              return (
+                <Card key={idx} className="rounded-2xl border border-slate-200/80 bg-white shadow-2xs">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-0.5">
+                        Q{idx + 1}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] font-medium text-emerald-700 bg-emerald-50 border-emerald-200"
+                      >
+                        Correct: Option {letter}
+                      </Badge>
+                    </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                    {[
-                      { key: 'A', text: q.option_a, val: CorrectAnswer.A },
-                      { key: 'B', text: q.option_b, val: CorrectAnswer.B },
-                      { key: 'C', text: q.option_c, val: CorrectAnswer.C },
-                      { key: 'D', text: q.option_d, val: CorrectAnswer.D },
-                    ].map((opt) => {
-                      const isCorrect = q.correct_answer === opt.val
-                      return (
-                        <div
-                          key={opt.key}
-                          className={`flex items-center gap-2 p-2 rounded-xl text-xs border ${
-                            isCorrect
-                              ? 'bg-emerald-50/50 border-emerald-300 text-emerald-900 font-semibold'
-                              : 'bg-slate-50/60 border-slate-200 text-slate-700'
-                          }`}
-                        >
-                          <span
-                            className={`h-5 w-5 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                    <p className="text-xs font-semibold text-slate-900 leading-relaxed">
+                      {q.question_text}
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                      {[
+                        { key: 'A', text: q.option_a, enumVal: CorrectAnswer.A },
+                        { key: 'B', text: q.option_b, enumVal: CorrectAnswer.B },
+                        { key: 'C', text: q.option_c, enumVal: CorrectAnswer.C },
+                        { key: 'D', text: q.option_d, enumVal: CorrectAnswer.D },
+                      ].map((opt) => {
+                        const isCorrect = q.correct_answer === opt.enumVal
+
+                        return (
+                          <div
+                            key={opt.key}
+                            className={`flex items-center gap-2 p-2 rounded-xl text-xs border ${
                               isCorrect
-                                ? 'bg-emerald-600 text-white'
-                                : 'bg-slate-200 text-slate-600'
+                                ? 'bg-emerald-50/70 border-emerald-300 text-emerald-900 font-semibold'
+                                : 'bg-slate-50/60 border-slate-200 text-slate-700'
                             }`}
                           >
-                            {opt.key}
-                          </span>
-                          <span className="truncate">{opt.text}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                            <span
+                              className={`h-5 w-5 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                                isCorrect
+                                  ? 'bg-emerald-600 text-white'
+                                  : 'bg-slate-200 text-slate-600'
+                              }`}
+                            >
+                              {opt.key}
+                            </span>
+                            <span className="truncate">{opt.text}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         )}
       </div>
