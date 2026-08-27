@@ -11,7 +11,7 @@ import OrganizationSetupView from '@/modules/organizations/views/OrganizationSet
 import DashboardView from '@/modules/dashboard/views/DashboardView'
 import AppLayout from '@/modules/layouts/AppLayout'
 import { UserRole } from '@/config/enums'
-import OrgTestsView from '@/modules/tests/views/OrgTestsView'
+import TestsView from '@/modules/tests/views/TestsView'
 import OrgStudentsView from '@/modules/students/views/OrgStudentsView'
 const BookmarksView = lazy(() => import('@/modules/bookmarks/views/BookmarksView'))
 const LeaderboardView = lazy(() => import('@/modules/leaderboards/views/LeaderboardView'))
@@ -39,7 +39,7 @@ export default function AppRoutes() {
       <Route path="/dashboard" element={<AppLayout role={UserRole.ORGANIZATION} />}>
         <Route index element={<Navigate to="/dashboard/organization" replace />} />
         <Route path="organization" element={<DashboardView role={UserRole.ORGANIZATION} />} />
-        <Route path="tests" element={<OrgTestsView />} />
+        <Route path="tests" element={<TestsView />} />
         <Route path="students" element={<OrgStudentsView />} />
         <Route path="bookmarks" element={<BookmarksView />} />
         <Route path="leaderboards" element={<LeaderboardView />} />

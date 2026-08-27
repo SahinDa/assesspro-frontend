@@ -64,7 +64,7 @@ interface OrgTestSetsViewProps {
   onBack?: () => void
 }
 
-export default function OrgTestSetsView({
+export default function TestSetsView({
   testId = 'test-1',
   testName = 'Algorithms & Data Structures',
   onBack,

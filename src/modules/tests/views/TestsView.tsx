@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import TestFormModal from '../components/TestFormModal'
 import DeleteTestDialog from '../components/DeleteTestDialog'
-import OrgTestSetsView from './OrgTestSetsView'
+import TestSetsView from './TestSetsView'
 import type { TestFormData } from '../utils/testValidation'
 
 export interface TestItem {
@@ -58,7 +58,7 @@ const MOCK_TESTS: TestItem[] = [
   },
 ]
 
-export default function OrgTestsView() {
+export default function TestsView() {
   const [tests, setTests] = useState<TestItem[]>(MOCK_TESTS)
   const [selectedTest, setSelectedTest] = useState<TestItem | null>(null)
 
@@ -75,7 +75,7 @@ export default function OrgTestsView() {
   // 1. If a test is selected, render Test Sets View
   if (selectedTest) {
     return (
-      <OrgTestSetsView
+      <TestSetsView
         testId={selectedTest.id}
         testName={selectedTest.name}
         onBack={() => setSelectedTest(null)}
