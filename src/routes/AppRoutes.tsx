@@ -54,6 +54,7 @@ export default function AppRoutes() {
         <Route path="dashboard" element={<DashboardView role={UserRole.STUDENT} />} />
         <Route path="plans" element={<PlansView userRole={UserRole.STUDENT} />} />
         <Route path="transactions" element={<TransactionsView userRole={UserRole.STUDENT} />} />
+        <Route path="tests" element={<TestsView userRole={UserRole.STUDENT} />} />
       </Route>
 
       {/* 3. Super Admin Dashboard */}
