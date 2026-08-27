@@ -30,31 +30,32 @@ export default function PlansView({
   userRole = UserRole.ORGANIZATION,
   currentOrgId = 'org-uuid-101'
 }: PlansViewProps) {
-  // State management for plans
+  // Plan state
   const [platformPlans, setPlatformPlans] = useState<PlatformPlanEntity[]>(MOCK_PLATFORM_PLANS)
   const [orgPlans, setOrgPlans] = useState<OrganizationPlanEntity[]>(MOCK_ORGANIZATION_PLANS)
 
-  // Dialog states
+  // Plan creation / editing modal state
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<PlatformPlanEntity | OrganizationPlanEntity | null>(null)
 
+  // Checkout modal state
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
   const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState<
     PlatformPlanEntity | OrganizationPlanEntity | null
   >(null)
+  const [selectedBillingCycle, setSelectedBillingCycle] = useState<number>(1)
 
-  // Separate Plan Limit Enums
+  // Tier quota limits
   const maxPlatformPlans = PlatformPlanLimit.MAX_ACTIVE_PLANS
   const maxOrgPlans = OrganizationPlanLimit.MAX_ACTIVE_PLANS
 
-  // Plan limit calculations
   const activePlatformPlansCount = platformPlans.filter((p) => p.is_active).length
   const activeOrgPlansCount = orgPlans.filter((p) => p.is_active).length
 
   const isPlatformLimitReached = activePlatformPlansCount >= maxPlatformPlans
   const isOrgLimitReached = activeOrgPlansCount >= maxOrgPlans
 
-  // Handlers
+  // Actions
   const handleCreatePlan = () => {
     setEditingPlan(null)
     setIsFormOpen(true)
@@ -73,8 +74,9 @@ export default function PlansView({
     }
   }
 
-  const handleSelectPlan = (plan: PlatformPlanEntity | OrganizationPlanEntity) => {
+  const handleSelectPlan = (plan: PlatformPlanEntity | OrganizationPlanEntity, cycle: number) => {
     setSelectedPlanForCheckout(plan)
+    setSelectedBillingCycle(cycle)
     setIsCheckoutOpen(true)
   }
 
@@ -115,13 +117,12 @@ export default function PlansView({
 
   return (
     <main className="w-full max-w-6xl mx-auto space-y-8 pb-24 px-2 sm:px-0">
-      {/* Hero Header Section */}
+      {/* Header Banner */}
       <header className="relative overflow-hidden rounded-3xl border border-border/70 bg-gradient-to-br from-card via-card to-indigo-950/10 p-6 sm:p-8 shadow-xs">
         <div className="absolute -top-16 -right-16 h-48 w-48 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
-            {/* Role Context Pill */}
             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold tracking-wide uppercase">
               {userRole === UserRole.ADMIN ? (
                 <>
@@ -141,7 +142,6 @@ export default function PlansView({
               )}
             </div>
 
-            {/* Main Title & Subtitle */}
             <div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
                 {userRole === UserRole.ADMIN
@@ -159,7 +159,6 @@ export default function PlansView({
               </p>
             </div>
 
-            {/* Quota Indicator Bar (Admin & Org only) */}
             {userRole !== UserRole.STUDENT && (
               <div className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
                 <span className="font-semibold text-foreground">Active Tiers:</span>
@@ -184,7 +183,6 @@ export default function PlansView({
             )}
           </div>
 
-          {/* Admin Top-Right Action Button */}
           {userRole === UserRole.ADMIN && (
             <div className="shrink-0 flex items-center">
               <Button
@@ -230,7 +228,7 @@ export default function PlansView({
         </div>
       )}
 
-      {/* 2. Organization View (Tabs) */}
+      {/* 2. Organization View */}
       {userRole === UserRole.ORGANIZATION && (
         <Tabs defaultValue="platform_tiers" className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -344,6 +342,8 @@ export default function PlansView({
         isOpen={isCheckoutOpen}
         onOpenChange={setIsCheckoutOpen}
         plan={selectedPlanForCheckout}
+        billingCycle={selectedBillingCycle}
+        userRole={userRole}
         onPaymentSuccess={() => {
           setIsCheckoutOpen(false)
         }}

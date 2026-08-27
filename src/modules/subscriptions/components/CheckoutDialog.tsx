@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckCircle2, ShieldCheck, Smartphone, CreditCard, Building, Loader2 } from 'lucide-react'
+import { CheckCircle2, ShieldCheck, Zap, Loader2, AlertCircle } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -11,12 +11,10 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { loadRazorpayScript } from '../utils/razorpay'
 import {
   UserRole,
   type UserRoleType,
-  OrgPaymentMethod,
-  OrgPaymentGateway,
-  OrgTransactionStatus,
   type PlatformPlanEntity,
   type OrganizationPlanEntity,
   getBillingCycleLabel,
@@ -26,7 +24,7 @@ interface CheckoutDialogProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   plan: PlatformPlanEntity | OrganizationPlanEntity | null
-  billingCycle: number
+  billingCycle?: number
   userRole: UserRoleType
   onPaymentSuccess: (transactionData: any) => void
 }
@@ -35,150 +33,183 @@ export default function CheckoutDialog({
   isOpen,
   onOpenChange,
   plan,
-  billingCycle,
+  billingCycle = 1,
   userRole,
   onPaymentSuccess,
 }: CheckoutDialogProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
-  const [selectedMethod, setSelectedMethod] = useState<number>(OrgPaymentMethod.UPI)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   if (!plan) return null
 
   const basePrice = plan.pricing[billingCycle] ?? 0
-  const taxAmount = Math.round(basePrice * 0.18)
-  const totalAmount = basePrice + taxAmount
 
-  const handleExecutePayment = () => {
-    setIsProcessing(true)
+  const razorpayKey =
+    (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_RAZORPAY_KEY_ID) ||
+    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_RAZORPAY_KEY_ID) ||
+    ''
 
-    setTimeout(() => {
-      const generatedOrderId = `order_RZP_${Math.floor(100000 + Math.random() * 900000)}`
-      const generatedTxId = `pay_RZP_${Math.floor(100000 + Math.random() * 900000)}`
+  const handleExecutePayment = async () => {
+    try {
+      setIsProcessing(true)
+      setErrorMessage(null)
 
-      const payload = {
-        transaction_id: `tx-${Date.now()}`,
-        plan_id: plan.plan_id,
-        plan_name: plan.name,
-        billing_cycle: billingCycle,
-        amount: totalAmount,
-        currency: plan.currency,
-        payment_method: selectedMethod,
-        payment_gateway: OrgPaymentGateway.Razorpay,
-        gateway_order_id: generatedOrderId,
-        gateway_transaction_id: generatedTxId,
-        status: OrgTransactionStatus.Success,
-        features: plan.features,
-        created_at: new Date().toISOString(),
+      // 1. Ensure Razorpay SDK script is ready
+      const isLoaded = await loadRazorpayScript()
+      if (!isLoaded) {
+        throw new Error('Unable to load payment SDK. Please check your internet connection.')
       }
 
+      // 2. Delegate Order Creation to Payment Service
+      const orderData = await paymentService.createOrder({
+        planId: plan.plan_id,
+        billingCycle: Number(billingCycle),
+      })
+
+      // 3. Open Razorpay Gateway Modal
+      const options = {
+        key: razorpayKey,
+        amount: orderData.amount,
+        currency: orderData.currency || 'INR',
+        name: 'Mock Test Platform',
+        description: `Plan: ${plan.name} (${getBillingCycleLabel(billingCycle)})`,
+        order_id: orderData.id,
+        handler: async (response: {
+          razorpay_order_id: string
+          razorpay_payment_id: string
+          razorpay_signature: string
+        }) => {
+          try {
+            // 4. Delegate Signature Verification to Payment Service
+            const verifyData = await paymentService.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            })
+
+            setIsProcessing(false)
+            setIsCompleted(true)
+            onPaymentSuccess(verifyData)
+          } catch (verifyError: any) {
+            setIsProcessing(false)
+            setErrorMessage(verifyError.message || 'Payment verification failed.')
+          }
+        },
+        modal: {
+          ondismiss: async () => {
+            setIsProcessing(false)
+            // 5. Delegate Cancellation Reporting to Payment Service
+            await paymentService.markPaymentFailed({
+              gateway_order_id: orderData.id,
+              error_reason: 'payment_cancelled',
+            })
+          },
+        },
+        theme: {
+          color: '#4f46e5',
+        },
+      }
+
+      const rzp = new (window as any).Razorpay(options)
+
+      rzp.on('payment.failed', async (response: any) => {
+        setIsProcessing(false)
+        setErrorMessage(response.error?.description || 'Transaction declined.')
+        await paymentService.markPaymentFailed({
+          gateway_order_id: orderData.id,
+          error_reason: response.error?.code || response.error?.reason || 'payment_failed',
+        })
+      })
+
+      rzp.open()
+    } catch (err: any) {
       setIsProcessing(false)
-      setIsCompleted(true)
-      onPaymentSuccess(payload)
-    }, 1200)
+      setErrorMessage(err.message || 'Payment initiation failed.')
+    }
   }
 
   const handleClose = () => {
     setIsCompleted(false)
     setIsProcessing(false)
+    setErrorMessage(null)
     onOpenChange(false)
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md rounded-2xl p-6">
+      <DialogContent className="w-[calc(100%-2rem)] sm:max-w-md rounded-3xl p-6 shadow-2xl border border-border/80 my-auto">
         {isCompleted ? (
           <div className="py-6 text-center space-y-4">
-            <div className="h-12 w-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="h-7 w-7" />
+            <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-500/20">
+              <CheckCircle2 className="h-8 w-8" />
             </div>
             <div className="space-y-1">
-              <DialogTitle className="text-xl font-black text-foreground">Subscription Activated</DialogTitle>
+              <DialogTitle className="text-xl font-black text-foreground">
+                Subscription Activated
+              </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                Payment verified for <strong className="text-foreground">{plan.name}</strong>.
+                Payment verified for <strong className="text-foreground">{plan.name}</strong>. Quotas and access limits are now active.
               </DialogDescription>
             </div>
             <Button
               onClick={handleClose}
-              className="w-full h-9 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="w-full h-10 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
             >
-              Continue to Dashboard
+              Done
             </Button>
           </div>
         ) : (
           <>
             <DialogHeader className="space-y-1">
               <div className="flex items-center justify-between">
-                <DialogTitle className="text-lg font-black tracking-tight">Checkout Order</DialogTitle>
-                <Badge variant="outline" className="text-[10px] font-bold">
+                <DialogTitle className="text-lg font-black tracking-tight text-foreground">
+                  Checkout Order
+                </DialogTitle>
+                <Badge variant="outline" className="text-[10px] font-bold border-indigo-500/30 text-indigo-600 bg-indigo-500/10">
                   {getBillingCycleLabel(billingCycle)}
                 </Badge>
               </div>
-              <DialogDescription className="text-xs">
+              <DialogDescription className="text-xs text-muted-foreground">
                 {userRole === UserRole.STUDENT
                   ? 'Purchasing test series subscription for enrolled organization.'
                   : 'Renewing platform organization subscription quota.'}
               </DialogDescription>
             </DialogHeader>
 
-            <div className="p-3.5 rounded-xl bg-muted/40 border border-border space-y-2 text-xs">
+            <div className="p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-2 text-xs">
               <div className="flex justify-between items-center font-bold text-foreground">
                 <span>{plan.name}</span>
                 <span>₹{basePrice.toLocaleString('en-IN')}</span>
               </div>
-              <div className="flex justify-between items-center text-muted-foreground text-[11px]">
-                <span>GST (18% Simulated)</span>
-                <span>₹{taxAmount.toLocaleString('en-IN')}</span>
-              </div>
               <Separator />
               <div className="flex justify-between items-center font-black text-sm text-foreground pt-0.5">
                 <span>Total Amount</span>
-                <span className="text-indigo-600 font-mono">₹{totalAmount.toLocaleString('en-IN')}</span>
+                <span className="text-indigo-600 font-mono text-base">
+                  ₹{basePrice.toLocaleString('en-IN')}
+                </span>
               </div>
             </div>
 
-            {/* Payment Method Selector */}
-            <div className="space-y-2 pt-1">
-              <span className="text-xs font-bold text-foreground">Payment Method</span>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: OrgPaymentMethod.UPI, label: 'UPI / QR', icon: Smartphone },
-                  { id: OrgPaymentMethod.Card, label: 'Cards', icon: CreditCard },
-                  { id: OrgPaymentMethod.NetBanking, label: 'Net Banking', icon: Building },
-                ].map((item) => {
-                  const Icon = item.icon
-                  const isSelected = selectedMethod === item.id
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setSelectedMethod(item.id)}
-                      className={`flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-semibold gap-1.5 transition-all cursor-pointer ${
-                        isSelected
-                          ? 'border-indigo-600 bg-indigo-50/40 text-indigo-700'
-                          : 'border-border bg-background hover:bg-muted text-muted-foreground'
-                      }`}
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span className="text-[11px]">{item.label}</span>
-                    </button>
-                  )
-                })}
+            {errorMessage && (
+              <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-xs font-medium">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span className="break-words">{errorMessage}</span>
               </div>
-            </div>
+            )}
 
             <div className="flex items-center gap-2 text-[11px] text-muted-foreground pt-1">
               <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
               <span>Processed securely via Razorpay payment gateway</span>
             </div>
 
-            <DialogFooter className="pt-3 gap-2">
+            <DialogFooter className="pt-3 border-t border-border/60 gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 disabled={isProcessing}
                 onClick={handleClose}
-                className="rounded-xl text-xs font-semibold h-9"
+                className="rounded-xl text-xs font-semibold h-9 flex-1 sm:flex-none cursor-pointer"
               >
                 Cancel
               </Button>
@@ -186,15 +217,18 @@ export default function CheckoutDialog({
                 size="sm"
                 disabled={isProcessing}
                 onClick={handleExecutePayment}
-                className="rounded-xl text-xs font-bold h-9 bg-indigo-600 hover:bg-indigo-700 text-white gap-2 flex-1"
+                className="rounded-xl text-xs font-bold h-9 bg-indigo-600 hover:bg-indigo-700 text-white gap-2 flex-1 sm:flex-none cursor-pointer"
               >
                 {isProcessing ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    <span>Verifying...</span>
+                    <span>Processing...</span>
                   </>
                 ) : (
-                  <span>Pay ₹{totalAmount.toLocaleString('en-IN')}</span>
+                  <>
+                    <Zap className="h-3.5 w-3.5" />
+                    <span>Pay ₹{basePrice.toLocaleString('en-IN')}</span>
+                  </>
                 )}
               </Button>
             </DialogFooter>
