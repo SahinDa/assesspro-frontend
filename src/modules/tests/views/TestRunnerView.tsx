@@ -171,7 +171,6 @@ export default function TestRunnerView({
         setFullscreenRequiredPrompt(false)
       }
     } catch {
-      // Browser blocked automatic request (needs direct user gesture)
       setFullscreenRequiredPrompt(true)
     }
   }, [])
@@ -187,7 +186,7 @@ export default function TestRunnerView({
         setIsFullscreen(false)
       }
     } catch {
-      // Handled gracefully
+      // Ignored
     }
   }
 
@@ -208,7 +207,6 @@ export default function TestRunnerView({
     initializeExam()
   }, [testSetId])
 
-  // Attempt fullscreen as soon as initialized
   useEffect(() => {
     if (!isInitializing && !hasInitializedFullscreen.current) {
       hasInitializedFullscreen.current = true
@@ -247,19 +245,16 @@ export default function TestRunnerView({
   useEffect(() => {
     if (isInitializing || isSubmitted) return
 
-    // 1. TAB_SWITCH (Visibility API)
     const handleVisibilityChange = () => {
       if (document.hidden) {
         triggerViolation(ViolationType.TAB_SWITCH, 'Tab switch or window minimization detected.')
       }
     }
 
-    // 2. WINDOW_BLUR (Lost Focus to another app/popup)
     const handleWindowBlur = () => {
       triggerViolation(ViolationType.WINDOW_BLUR, 'Focus lost from the test runner window.')
     }
 
-    // 3. FULLSCREEN_EXIT
     const handleFullscreenChange = () => {
       const inFullscreen = Boolean(document.fullscreenElement)
       setIsFullscreen(inFullscreen)
@@ -269,19 +264,16 @@ export default function TestRunnerView({
       }
     }
 
-    // 4. CLIPBOARD_COPY
     const handleCopy = (e: ClipboardEvent) => {
       e.preventDefault()
       triggerViolation(ViolationType.CLIPBOARD_COPY, 'Copying question content is prohibited.')
     }
 
-    // 5. CLIPBOARD_PASTE
     const handlePaste = (e: ClipboardEvent) => {
       e.preventDefault()
       triggerViolation(ViolationType.CLIPBOARD_PASTE, 'Pasting external content is prohibited.')
     }
 
-    // 6. DEV_TOOLS (F12, Ctrl+Shift+I/J/C, Cmd+Option+I/J/C, Ctrl+U)
     const handleKeyDown = (e: KeyboardEvent) => {
       const isDevKey =
         e.key === 'F12' ||
@@ -294,7 +286,6 @@ export default function TestRunnerView({
       }
     }
 
-    // Disable Right-Click context menu to prevent inspecting
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault()
     }
@@ -342,7 +333,6 @@ export default function TestRunnerView({
     setShowSubmitModal(false)
     setIsSubmitted(true)
 
-    // Exit fullscreen cleanly on finish
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {})
     }
@@ -572,7 +562,7 @@ export default function TestRunnerView({
           </div>
         )}
 
-        {/* TOP HEADER */}
+        {/* TOP HEADER (No submit button here) */}
         <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:px-5 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-3">
             <Button
@@ -624,16 +614,6 @@ export default function TestRunnerView({
               title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
             >
               {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            </Button>
-
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => setShowSubmitModal(true)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl h-8 px-3.5 gap-1.5 shadow-xs cursor-pointer"
-            >
-              <Send className="h-3 w-3" />
-              <span>Submit Test</span>
             </Button>
           </div>
         </div>
@@ -842,7 +822,7 @@ export default function TestRunnerView({
                   })}
                 </div>
 
-                {/* Submit Button */}
+                {/* Submit Final Button in Palette */}
                 <div className="pt-2">
                   <Button
                     type="button"
