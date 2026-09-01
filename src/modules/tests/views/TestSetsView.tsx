@@ -12,6 +12,7 @@ import {
   Play,
   Eye,
 } from 'lucide-react'
+import TestRunnerView from './TestRunnerView'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -85,6 +86,8 @@ export default function TestSetsView({
   // State to track which set the Organization is inspecting in Details View
   const [selectedSetForDetails, setSelectedSetForDetails] = useState<TestSetItem | null>(null)
 
+  const [activeRunningSet, setActiveRunningSet] = useState<TestSetItem | null>(null)
+
   // Organization-only modal states
   const [modalState, setModalState] = useState<{
     isOpen: boolean
@@ -127,7 +130,23 @@ export default function TestSetsView({
     }
   }
 
-  // 1. ORGANIZATION ONLY: Render Details View for inspecting questions/configuration
+  //  STUDENT ONLY: Launch Active Test Runner
+if (isStudent && activeRunningSet) {
+  return (
+    <TestRunnerView
+      testSetId={activeRunningSet.id}
+      testName={testName}
+      setName={activeRunningSet.name}
+      timerMinutes={activeRunningSet.timer_minutes}
+      positiveMarks={activeRunningSet.positive_marking_value}
+      negativeMarks={activeRunningSet.negative_score_value}
+      isNegativeMarking={activeRunningSet.is_negative_marking}
+      isPreview={false}
+      onExit={() => setActiveRunningSet(null)}
+    />
+  )
+}
+  //  ORGANIZATION ONLY: Render Details View for inspecting questions/configuration
   if (!isStudent && selectedSetForDetails) {
     return (
       <>
@@ -154,7 +173,7 @@ export default function TestSetsView({
     )
   }
 
-  // 2. MAIN TEST SETS GRID VIEW
+  //  MAIN TEST SETS GRID VIEW
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -237,6 +256,7 @@ export default function TestSetsView({
               key={set.id}
               onClick={() => {
                 if (isStudent) {
+                  setActiveRunningSet(set)
                   onTakeTestSet?.(set.id)
                 } else {
                   setSelectedSetForDetails(set)
@@ -330,6 +350,7 @@ export default function TestSetsView({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation()
+                        setActiveRunningSet(set)
                         onTakeTestSet?.(set.id)
                       }}
                       className="w-full h-9 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white gap-2 shadow-xs cursor-pointer transition-all"
