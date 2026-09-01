@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Check, Trash2, HelpCircle, Settings2, UploadCloud, CheckCircle2 } from 'lucide-react'
+import { Plus, Check, Trash2, HelpCircle, Settings2, UploadCloud, CheckCircle2, AlertCircle } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -99,7 +99,13 @@ export default function TestSetFormModal({
     }
   }, [isOpen, testSet])
 
+  const questionsCount = formData.questions.length
+  const totalRequired = formData.total_questions || 0
+  const isQuestionsComplete = questionsCount === totalRequired
+  const questionsRemaining = Math.max(0, totalRequired - questionsCount)
+
   const handleAddQuestion = () => {
+    if (questionsCount >= totalRequired) return
     setFormData((prev) => ({
       ...prev,
       questions: [...prev.questions, { ...emptyQuestion }],
@@ -126,14 +132,28 @@ export default function TestSetFormModal({
   }
 
   const handleBulkImport = (importedQuestions: QuestionFormData[]) => {
-    setFormData((prev) => ({
-      ...prev,
-      questions: [...prev.questions, ...importedQuestions],
-    }))
+    setFormData((prev) => {
+      const remainingSlots = Math.max(0, prev.total_questions - prev.questions.length)
+      const allowedBatch = importedQuestions.slice(0, remainingSlots)
+      return {
+        ...prev,
+        questions: [...prev.questions, ...allowedBatch],
+      }
+    })
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Enforce exact question count validation
+    if (!isQuestionsComplete) {
+      setErrors((prev) => ({
+        ...prev,
+        questionsCount: `You must add exactly ${totalRequired} questions before saving. Current: ${questionsCount}/${totalRequired}.`,
+      }))
+      setActiveTab('questions')
+      return
+    }
 
     const result = testSetSchema.safeParse(formData)
 
@@ -153,6 +173,8 @@ export default function TestSetFormModal({
         fieldErrors.negative_score_value
       ) {
         setActiveTab('config')
+      } else {
+        setActiveTab('questions')
       }
       return
     }
@@ -179,7 +201,7 @@ export default function TestSetFormModal({
             <DialogDescription className="text-xs text-slate-500 leading-relaxed">
               {isEditing
                 ? 'Update your test set configuration, time limits, scoring criteria, and question items.'
-                : 'Create and configure a new test set by setting total questions, timer duration, marks awarded, negative marking penalties, and adding question items.'}
+                : `Configure rules and add all ${totalRequired} questions to enable test set creation.`}
             </DialogDescription>
           </DialogHeader>
 
@@ -200,7 +222,7 @@ export default function TestSetFormModal({
                   value="questions"
                   className="text-xs font-semibold rounded-lg flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-xs cursor-pointer"
                 >
-                  <HelpCircle className="h-3.5 w-3.5" /> Questions ({formData.questions.length})
+                  <HelpCircle className="h-3.5 w-3.5" /> Questions ({questionsCount}/{totalRequired})
                 </TabsTrigger>
               </TabsList>
 
@@ -251,10 +273,13 @@ export default function TestSetFormModal({
                       <Input
                         id="total-q"
                         type="number"
-                        min={10}
+                        min={1}
                         max={100}
                         value={formData.total_questions}
-                        onChange={(e) => setFormData({ ...formData, total_questions: Number(e.target.value) })}
+                        onChange={(e) => {
+                          const val = Number(e.target.value)
+                          setFormData({ ...formData, total_questions: val })
+                        }}
                         className="text-xs rounded-xl h-10 border-slate-200"
                       />
                       {errors.total_questions && (
@@ -354,8 +379,15 @@ export default function TestSetFormModal({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <p className="text-xs font-semibold text-slate-700">Questions in this Test Set</p>
-                      <Badge variant="outline" className="text-[11px] font-semibold bg-indigo-50 text-indigo-700 border-indigo-100">
-                        {formData.questions.length} / {formData.total_questions} Configured
+                      <Badge
+                        variant="outline"
+                        className={`text-[11px] font-semibold ${
+                          isQuestionsComplete
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-amber-50 text-amber-700 border-amber-200'
+                        }`}
+                      >
+                        {questionsCount} / {totalRequired} Added
                       </Badge>
                     </div>
 
@@ -364,8 +396,9 @@ export default function TestSetFormModal({
                         type="button"
                         variant="outline"
                         size="sm"
+                        disabled={questionsCount >= totalRequired}
                         onClick={() => setIsBulkOpen(true)}
-                        className="rounded-xl text-xs h-8 px-2.5 gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                        className="rounded-xl text-xs h-8 px-2.5 gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer disabled:opacity-50"
                       >
                         <UploadCloud className="h-3.5 w-3.5 text-slate-400" /> Bulk Import
                       </Button>
@@ -373,17 +406,27 @@ export default function TestSetFormModal({
                         type="button"
                         variant="outline"
                         size="sm"
+                        disabled={questionsCount >= totalRequired}
                         onClick={handleAddQuestion}
-                        className="rounded-xl text-xs h-8 px-2.5 gap-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+                        className="rounded-xl text-xs h-8 px-2.5 gap-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer disabled:opacity-50"
                       >
                         <Plus className="h-3.5 w-3.5" /> Add Question
                       </Button>
                     </div>
                   </div>
 
+                  {errors.questionsCount && (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <span>{errors.questionsCount}</span>
+                    </div>
+                  )}
+
                   {formData.questions.length === 0 ? (
                     <div className="text-center py-8 px-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 space-y-2">
-                      <p className="text-xs text-slate-500">No questions added yet to this test set.</p>
+                      <p className="text-xs text-slate-500">
+                        Please add {totalRequired} questions to enable creating this test set.
+                      </p>
                       <div className="flex items-center justify-center gap-3">
                         <Button
                           type="button"
@@ -491,7 +534,7 @@ export default function TestSetFormModal({
               </div>
             </Tabs>
 
-            <DialogFooter className="pt-3 gap-2 sm:gap-2 shrink-0 border-t border-slate-100">
+            <DialogFooter className="pt-3 gap-2 sm:gap-2 shrink-0 border-t border-slate-100 flex items-center justify-between">
               <Button
                 type="button"
                 variant="outline"
@@ -501,21 +544,37 @@ export default function TestSetFormModal({
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                size="sm"
-                className="rounded-xl text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-semibold h-9 px-4 gap-1.5 shadow-xs cursor-pointer"
-              >
-                {isEditing ? (
-                  <>
-                    <Check className="h-3.5 w-3.5" /> Save Test Set Changes
-                  </>
-                ) : (
-                  <>
-                    <Plus className="h-3.5 w-3.5" /> Create Test Set
-                  </>
-                )}
-              </Button>
+
+              {/* Show submit button ONLY if all questions are filled, or show a guided helper button */}
+              {isQuestionsComplete ? (
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="rounded-xl text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-semibold h-9 px-4 gap-1.5 shadow-xs cursor-pointer"
+                >
+                  {isEditing ? (
+                    <>
+                      <Check className="h-3.5 w-3.5" /> Save Test Set Changes
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-3.5 w-3.5" /> Create Test Set ({questionsCount}/{totalRequired})
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setActiveTab('questions')}
+                  className="rounded-xl text-xs bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium h-9 px-3.5 gap-1.5 cursor-pointer"
+                >
+                  <span>
+                    Add {questionsRemaining} more question{questionsRemaining > 1 ? 's' : ''} to create ({questionsCount}/{totalRequired})
+                  </span>
+                </Button>
+              )}
             </DialogFooter>
           </form>
         </DialogContent>
