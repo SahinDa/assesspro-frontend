@@ -52,6 +52,9 @@ export default function AppRoutes() {
       <Route path="/student" element={<AppLayout role={UserRole.STUDENT} />}>
         <Route index element={<Navigate to="/student/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardView role={UserRole.STUDENT} />} />
+         <Route path="bookmarks" element={<BookmarksView />} />
+        <Route path="leaderboards" element={<LeaderboardView />} />
+        <Route path="notifications" element={<NotificationsView />} />
         <Route path="plans" element={<PlansView userRole={UserRole.STUDENT} />} />
         <Route path="transactions" element={<TransactionsView userRole={UserRole.STUDENT} />} />
         <Route path="tests" element={<TestsView userRole={UserRole.STUDENT} />} />

@@ -40,6 +40,9 @@ export function Sidebar({ role }: SidebarProps) {
     : [
         { label: 'My Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
         { label: 'Tests', path: '/student/tests', icon: FolderKanban},
+        { label: 'Bookmarks', path: '/student/bookmarks', icon: Bookmark },
+        { label: 'Leaderboards', path: '/student/leaderboards', icon: Trophy },
+        { label: 'Notifications', path: '/dashboard/notifications', icon: Bell },
         { label: 'Plans & Pricing', path: '/student/plans', icon: CreditCard },
         { label: 'My Transactions', path: '/student/transactions', icon: Receipt },
         { label: 'Performance', path: '/student/performance', icon: BarChart3 },
