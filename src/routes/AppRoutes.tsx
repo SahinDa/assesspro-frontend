@@ -47,7 +47,7 @@ export default function AppRoutes() {
         <Route path="notifications" element={<NotificationsView />} />
         <Route path="plans" element={<PlansView userRole={UserRole.ORGANIZATION} />} />
         <Route path="billing" element={<TransactionsView userRole={UserRole.ORGANIZATION} />} />
-        <Route path ="attempts" element={<TestAttemptsView userRole={UserRole.STUDENT}/>} />
+        <Route path ="attempts" element={<TestAttemptsView userRole={UserRole.ORGANIZATION}/>} />
       </Route>
 
       {/* 2. Student Dashboard */}
