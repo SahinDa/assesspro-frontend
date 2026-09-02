@@ -96,7 +96,6 @@ const MOCK_QUESTIONS_BREAKDOWN: QuestionBreakdown[] = [
     is_correct: true,
     marks_awarded: 2.0,
     time_spent_seconds: 45,
-    explanation: 'Using a binary min-heap, extract-min is called V times taking O(V log V), and decrease-key is called up to E times taking O(E log V), giving total time O((V + E) log V).',
   },
   {
     question_id: 'q-2',
@@ -110,7 +109,6 @@ const MOCK_QUESTIONS_BREAKDOWN: QuestionBreakdown[] = [
     is_correct: false,
     marks_awarded: -0.5,
     time_spent_seconds: 30,
-    explanation: 'BFS explores neighbor vertices in standard FIFO order, necessitating a Queue. Stacks are used for Depth-First Search (DFS).',
   },
   {
     question_id: 'q-3',
@@ -124,7 +122,6 @@ const MOCK_QUESTIONS_BREAKDOWN: QuestionBreakdown[] = [
     is_correct: false,
     marks_awarded: 0.0,
     time_spent_seconds: 15,
-    explanation: 'Durability ensures that once a transaction has completed and committed, its modifications permanently persist in non-volatile storage.',
   },
 ]
 

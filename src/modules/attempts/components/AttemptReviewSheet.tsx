@@ -125,6 +125,7 @@ export default function AttemptReviewSheet({
                 {currentQ.question_text}
               </p>
 
+              {/* Options */}
               <div className="space-y-2.5">
                 {options.map((opt) => {
                   const isUserPick = currentQ.selected_option === opt.value
@@ -161,13 +162,7 @@ export default function AttemptReviewSheet({
                 })}
               </div>
 
-              {currentQ.explanation && (
-                <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 text-xs space-y-1">
-                  <span className="font-bold text-indigo-900 block">Explanation:</span>
-                  <p className="text-slate-600 leading-relaxed">{currentQ.explanation}</p>
-                </div>
-              )}
-
+              {/* Navigation buttons */}
               <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                 <Button
                   variant="outline"

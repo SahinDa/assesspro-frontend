@@ -42,7 +42,6 @@ export interface QuestionBreakdown {
   is_correct: boolean
   marks_awarded: number
   time_spent_seconds: number
-  explanation?: string
 }
 
 export const formatDuration = (secs: number) => {
