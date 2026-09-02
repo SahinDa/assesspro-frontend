@@ -40,6 +40,8 @@ export default function AttemptFilterBar({
   onSetChange,
   onSearchChange,
 }: AttemptFilterBarProps) {
+  const isSpecificTestSelected = selectedTestId !== 'ALL'
+
   return (
     <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-xs">
       <CardContent className="p-3.5 space-y-2">
@@ -50,9 +52,9 @@ export default function AttemptFilterBar({
               <span>Filters:</span>
             </div>
 
-            {/* Test / Course Selector */}
+            {/* 1. Parent Test Dropdown (Always visible) */}
             <Select value={selectedTestId} onValueChange={onTestChange}>
-              <SelectTrigger className="w-[190px] h-8 text-xs rounded-xl border-slate-200 bg-slate-50/50">
+              <SelectTrigger className="w-[200px] h-8 text-xs rounded-xl border-slate-200 bg-slate-50/50">
                 <SelectValue placeholder="All Tests" />
               </SelectTrigger>
               <SelectContent>
@@ -65,27 +67,25 @@ export default function AttemptFilterBar({
               </SelectContent>
             </Select>
 
-            {/* Dependent Test Set Selector */}
-            <Select
-              value={selectedSetId}
-              onValueChange={onSetChange}
-              disabled={selectedTestId === 'ALL'}
-            >
-              <SelectTrigger className="w-[190px] h-8 text-xs rounded-xl border-slate-200 bg-slate-50/50 disabled:opacity-50">
-                <SelectValue placeholder={selectedTestId === 'ALL' ? 'Select a test first' : 'All Test Sets'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Test Sets</SelectItem>
-                {availableSets.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* 2. Test Set Dropdown: Only renders when a specific test is selected */}
+            {isSpecificTestSelected && (
+              <Select value={selectedSetId} onValueChange={onSetChange}>
+                <SelectTrigger className="w-[200px] h-8 text-xs rounded-xl border-slate-200 bg-indigo-50/40 text-slate-900 animate-in fade-in zoom-in-95 duration-150">
+                  <SelectValue placeholder="All Test Sets" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All Test Sets</SelectItem>
+                  {availableSets.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
-          {/* Search Input */}
+          {/* Search Field */}
           <div className="relative w-full sm:w-56">
             <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input
