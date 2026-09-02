@@ -30,6 +30,7 @@ export function Sidebar({ role }: SidebarProps) {
     ? [
         { label: 'Dashboard', path: '/dashboard/organization', icon: LayoutDashboard },
         { label: 'Tests', path: '/dashboard/tests', icon: FolderKanban },
+        { label: 'History', path: '/dashboard/attempts', icon: History },
         { label: 'Students', path: '/dashboard/students', icon: Users2 },
         { label: 'Bookmarks', path: '/dashboard/bookmarks', icon: Bookmark },
         { label: 'Leaderboards', path: '/dashboard/leaderboards', icon: Trophy },
@@ -40,9 +41,10 @@ export function Sidebar({ role }: SidebarProps) {
     : [
         { label: 'My Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
         { label: 'Tests', path: '/student/tests', icon: FolderKanban},
+        { label: 'History', path: '/student/attempts', icon: History },
         { label: 'Bookmarks', path: '/student/bookmarks', icon: Bookmark },
         { label: 'Leaderboards', path: '/student/leaderboards', icon: Trophy },
-        { label: 'Notifications', path: '/student/notifications', icon: Bell },
+        { label: 'Notifications', path: '/studentfix /notifications', icon: Bell },
         { label: 'Plans & Pricing', path: '/student/plans', icon: CreditCard },
         { label: 'My Transactions', path: '/student/transactions', icon: Receipt },
         { label: 'Performance', path: '/student/performance', icon: BarChart3 },

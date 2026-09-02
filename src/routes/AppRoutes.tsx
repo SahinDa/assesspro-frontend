@@ -17,6 +17,7 @@ const BookmarksView = lazy(() => import('@/modules/bookmarks/views/BookmarksView
 const LeaderboardView = lazy(() => import('@/modules/leaderboards/views/LeaderboardView'))
 import NotificationsView from '@/modules/notifications/views/NotificationsView'
 import { PlansView, TransactionsView } from '@/modules/subscriptions'
+import TestAttemptsView from "@/modules/attempts/views/TestAttemptsView"
 
 export default function AppRoutes() {
   return (
@@ -46,6 +47,7 @@ export default function AppRoutes() {
         <Route path="notifications" element={<NotificationsView />} />
         <Route path="plans" element={<PlansView userRole={UserRole.ORGANIZATION} />} />
         <Route path="billing" element={<TransactionsView userRole={UserRole.ORGANIZATION} />} />
+        <Route path ="attempts" element={<TestAttemptsView userRole={UserRole.STUDENT}/>} />
       </Route>
 
       {/* 2. Student Dashboard */}
@@ -58,6 +60,7 @@ export default function AppRoutes() {
         <Route path="plans" element={<PlansView userRole={UserRole.STUDENT} />} />
         <Route path="transactions" element={<TransactionsView userRole={UserRole.STUDENT} />} />
         <Route path="tests" element={<TestsView userRole={UserRole.STUDENT} />} />
+        <Route path ="attempts" element={<TestAttemptsView userRole={UserRole.STUDENT}/>} />
       </Route>
 
       {/* 3. Super Admin Dashboard */}
