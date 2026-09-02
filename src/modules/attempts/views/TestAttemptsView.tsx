@@ -1,13 +1,12 @@
 import { useState, useMemo } from 'react'
 import { Card } from '@/components/ui/card'
 import { UserRole, type UserRoleType } from '@/config/enums'
-import AttemptFilterBar from '../components/AttemptFilterBar'
+import AttemptFilterBar, { type SortOrder } from '../components/AttemptFilterBar'
 import AttemptSummaryCard from '../components/AttemptSummaryCard'
 import AttemptReviewSheet from '../components/AttemptReviewSheet'
-import {
-  AttemptHistoryFilterSchema,
-  type AttemptSummaryItem,
-  type QuestionBreakdown,
+import type {
+  AttemptSummaryItem,
+  QuestionBreakdown,
 } from '../utils/attemptValidation'
 
 const MOCK_TESTS = [
@@ -138,8 +137,7 @@ export default function TestAttemptsView({ userRole = UserRole.STUDENT }: TestAt
 
   const [selectedTestId, setSelectedTestId] = useState<string>('ALL')
   const [selectedSetId, setSelectedSetId] = useState<string>('ALL')
-  const [searchQuery, setSearchQuery] = useState<string>('')
-  const [searchError, setSearchError] = useState<string | null>(null)
+  const [sortOrder, setSortOrder] = useState<SortOrder>('date_desc')
 
   const [activeAttempt, setActiveAttempt] = useState<AttemptSummaryItem | null>(null)
 
@@ -156,41 +154,27 @@ export default function TestAttemptsView({ userRole = UserRole.STUDENT }: TestAt
     setSelectedSetId('ALL')
   }
 
-  const handleSearchChange = (val: string) => {
-    setSearchQuery(val)
-    const result = AttemptHistoryFilterSchema.safeParse({
-      testId: selectedTestId,
-      setId: selectedSetId,
-      searchQuery: val,
-    })
-
-    if (!result.success) {
-      setSearchError(result.error.errors[0]?.message || 'Invalid search input')
-    } else {
-      setSearchError(null)
-    }
-  }
-
   const filteredAttempts = useMemo(() => {
     return MOCK_ATTEMPTS.filter((item) => {
       if (selectedTestId !== 'ALL' && item.test_id !== selectedTestId) return false
       if (selectedSetId !== 'ALL' && item.set_id !== selectedSetId) return false
-
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase()
-        if (isOrg) {
-          const matchName = item.student_name?.toLowerCase().includes(query)
-          const matchSet = item.set_name.toLowerCase().includes(query)
-          if (!matchName && !matchSet) return false
-        } else {
-          const matchTest = item.test_title.toLowerCase().includes(query)
-          const matchSet = item.set_name.toLowerCase().includes(query)
-          if (!matchTest && !matchSet) return false
-        }
-      }
       return true
-    }).sort((a, b) => new Date(b.end_time).getTime() - new Date(a.end_time).getTime())
-  }, [selectedTestId, selectedSetId, searchQuery, isOrg])
+    }).sort((a, b) => {
+      if (sortOrder === 'date_desc') {
+        return new Date(b.end_time).getTime() - new Date(a.end_time).getTime()
+      }
+      if (sortOrder === 'date_asc') {
+        return new Date(a.end_time).getTime() - new Date(b.end_time).getTime()
+      }
+      if (sortOrder === 'score_desc') {
+        return b.score - a.score
+      }
+      if (sortOrder === 'score_asc') {
+        return a.score - b.score
+      }
+      return 0
+    })
+  }, [selectedTestId, selectedSetId, sortOrder])
 
   // Sub-view: Detailed Attempt Solution Sheet
   if (activeAttempt) {
@@ -223,12 +207,10 @@ export default function TestAttemptsView({ userRole = UserRole.STUDENT }: TestAt
         selectedTestId={selectedTestId}
         selectedSetId={selectedSetId}
         availableSets={availableSets}
-        searchQuery={searchQuery}
-        searchError={searchError}
-        isOrg={isOrg}
+        sortOrder={sortOrder}
         onTestChange={handleTestChange}
         onSetChange={setSelectedSetId}
-        onSearchChange={handleSearchChange}
+        onSortChange={setSortOrder}
       />
 
       <div className="space-y-3">

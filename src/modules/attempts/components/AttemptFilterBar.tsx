@@ -1,6 +1,5 @@
-import { Filter, Search, AlertCircle } from 'lucide-react'
+import { Filter, ArrowUpDown } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -15,17 +14,17 @@ interface TestOption {
   sets: Array<{ id: string; name: string }>
 }
 
+export type SortOrder = 'date_desc' | 'date_asc' | 'score_desc' | 'score_asc'
+
 interface AttemptFilterBarProps {
   tests: TestOption[]
   selectedTestId: string
   selectedSetId: string
   availableSets: Array<{ id: string; name: string }>
-  searchQuery: string
-  searchError: string | null
-  isOrg: boolean
+  sortOrder: SortOrder
   onTestChange: (val: string) => void
   onSetChange: (val: string) => void
-  onSearchChange: (val: string) => void
+  onSortChange: (val: SortOrder) => void
 }
 
 export default function AttemptFilterBar({
@@ -33,28 +32,28 @@ export default function AttemptFilterBar({
   selectedTestId,
   selectedSetId,
   availableSets,
-  searchQuery,
-  searchError,
-  isOrg,
+  sortOrder,
   onTestChange,
   onSetChange,
-  onSearchChange,
+  onSortChange,
 }: AttemptFilterBarProps) {
   const isSpecificTestSelected = selectedTestId !== 'ALL'
 
   return (
     <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-xs">
-      <CardContent className="p-3.5 space-y-2">
+      <CardContent className="p-3.5">
         <div className="flex flex-wrap items-center justify-between gap-3">
+          
+          {/* Left: Cascading Filter Selectors */}
           <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 mr-1">
               <Filter className="h-3.5 w-3.5 text-slate-400" />
               <span>Filters:</span>
             </div>
 
-            {/* 1. Parent Test Dropdown (Always visible) */}
+            {/* 1. Parent Test Dropdown */}
             <Select value={selectedTestId} onValueChange={onTestChange}>
-              <SelectTrigger className="w-[200px] h-8 text-xs rounded-xl border-slate-200 bg-slate-50/50">
+              <SelectTrigger className="w-[190px] h-8 text-xs rounded-xl border-slate-200 bg-slate-50/50">
                 <SelectValue placeholder="All Tests" />
               </SelectTrigger>
               <SelectContent>
@@ -67,10 +66,10 @@ export default function AttemptFilterBar({
               </SelectContent>
             </Select>
 
-            {/* 2. Test Set Dropdown: Only renders when a specific test is selected */}
+            {/* 2. Test Set Dropdown (Appears only when a specific Test is chosen) */}
             {isSpecificTestSelected && (
               <Select value={selectedSetId} onValueChange={onSetChange}>
-                <SelectTrigger className="w-[200px] h-8 text-xs rounded-xl border-slate-200 bg-indigo-50/40 text-slate-900 animate-in fade-in zoom-in-95 duration-150">
+                <SelectTrigger className="w-[190px] h-8 text-xs rounded-xl border-slate-200 bg-indigo-50/40 text-slate-900 animate-in fade-in zoom-in-95 duration-150">
                   <SelectValue placeholder="All Test Sets" />
                 </SelectTrigger>
                 <SelectContent>
@@ -85,24 +84,28 @@ export default function AttemptFilterBar({
             )}
           </div>
 
-          {/* Search Field */}
-          <div className="relative w-full sm:w-56">
-            <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder={isOrg ? 'Search candidate or set...' : 'Search test or set...'}
-              className="pl-8 h-8 text-xs rounded-xl border-slate-200"
-            />
+          {/* Right: Sort Order Selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold text-slate-400 hidden sm:inline">
+              Sort by:
+            </span>
+            <Select value={sortOrder} onValueChange={(v) => onSortChange(v as SortOrder)}>
+              <SelectTrigger className="w-[150px] h-8 text-xs rounded-xl border-slate-200 bg-white">
+                <div className="flex items-center gap-1.5 truncate">
+                  <ArrowUpDown className="h-3 w-3 text-slate-400 shrink-0" />
+                  <SelectValue />
+                </div>
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectItem value="date_desc">Latest First</SelectItem>
+                <SelectItem value="date_asc">Oldest First</SelectItem>
+                <SelectItem value="score_desc">Highest Score</SelectItem>
+                <SelectItem value="score_asc">Lowest Score</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </div>
 
-        {searchError && (
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-rose-500 pl-1 pt-1">
-            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-            <span>{searchError}</span>
-          </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   )
