@@ -39,6 +39,17 @@ export default function AttemptFilterBar({
 }: AttemptFilterBarProps) {
   const isSpecificTestSelected = selectedTestId !== 'ALL'
 
+  // Resolve human-readable labels from current IDs
+  const currentTestLabel =
+    selectedTestId === 'ALL'
+      ? 'All Tests'
+      : tests.find((t) => t.id === selectedTestId)?.title ?? 'All Tests'
+
+  const currentSetLabel =
+    selectedSetId === 'ALL'
+      ? 'All Test Sets'
+      : availableSets.find((s) => s.id === selectedSetId)?.name ?? 'All Test Sets'
+
   return (
     <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-xs">
       <CardContent className="p-3.5">
@@ -53,8 +64,10 @@ export default function AttemptFilterBar({
 
             {/* 1. Parent Test Dropdown */}
             <Select value={selectedTestId} onValueChange={onTestChange}>
-              <SelectTrigger className="w-[190px] h-8 text-xs rounded-xl border-slate-200 bg-slate-50/50">
-                <SelectValue placeholder="All Tests" />
+              <SelectTrigger className="w-[210px] h-8 text-xs rounded-xl border-slate-200 bg-slate-50/50">
+                <SelectValue placeholder="All Tests">
+                  <span className="truncate">{currentTestLabel}</span>
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">All Tests</SelectItem>
@@ -69,8 +82,10 @@ export default function AttemptFilterBar({
             {/* 2. Test Set Dropdown (Appears only when a specific Test is chosen) */}
             {isSpecificTestSelected && (
               <Select value={selectedSetId} onValueChange={onSetChange}>
-                <SelectTrigger className="w-[190px] h-8 text-xs rounded-xl border-slate-200 bg-indigo-50/40 text-slate-900 animate-in fade-in zoom-in-95 duration-150">
-                  <SelectValue placeholder="All Test Sets" />
+                <SelectTrigger className="w-[210px] h-8 text-xs rounded-xl border-slate-200 bg-indigo-50/40 text-slate-900 animate-in fade-in zoom-in-95 duration-150">
+                  <SelectValue placeholder="All Test Sets">
+                    <span className="truncate">{currentSetLabel}</span>
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">All Test Sets</SelectItem>
