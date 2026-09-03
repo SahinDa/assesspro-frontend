@@ -20,6 +20,7 @@ import OrgOverviewMetrics from '../components/OrgOverviewMetrics';
 import TestAttemptsView from '@/modules/attempts/views/TestAttemptsView';
 import { TransactionsView } from '@/modules/subscriptions';
 import { UserRole } from '@/config/enums';
+import TestsView from '@/modules/tests/views/TestsView';
 
 interface AdminOrgDetailViewProps {
   org: OrgItem;
@@ -84,11 +85,10 @@ export default function AdminOrgDetailView({ org, onBack }: AdminOrgDetailViewPr
               variant="outline"
               size="sm"
               onClick={toggleStatus}
-              className={`rounded-xl text-xs h-8.5 px-3 gap-1.5 font-bold cursor-pointer ${
-                status === OrganizationStatus.ACTIVE
+              className={`rounded-xl text-xs h-8.5 px-3 gap-1.5 font-bold cursor-pointer ${status === OrganizationStatus.ACTIVE
                   ? 'border-amber-200 text-amber-800 hover:bg-amber-50'
                   : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
-              }`}
+                }`}
             >
               {status === OrganizationStatus.ACTIVE ? (
                 <>
@@ -128,13 +128,14 @@ export default function AdminOrgDetailView({ org, onBack }: AdminOrgDetailViewPr
           <OrgOverviewMetrics org={{ ...org, status }} />
         </TabsContent>
 
-        <TabsContent value="tests">
-          <Card className="rounded-3xl border-slate-200/80 bg-white p-6">
-            <h3 className="text-sm font-bold text-slate-900 mb-1">Organization Test Sets</h3>
-            <p className="text-xs text-slate-500">
-              Read-only view of test sets and questions created by {org.name}.
-            </p>
-          </Card>
+        <TabsContent value="tests" className="space-y-4">
+          <div className="bg-slate-50/50 p-2 rounded-3xl">
+            <TestsView
+              userRole={UserRole.ADMIN}
+              readOnly={true}
+              orgId={org.id}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="attempts">
