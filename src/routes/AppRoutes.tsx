@@ -18,6 +18,7 @@ const LeaderboardView = lazy(() => import('@/modules/leaderboards/views/Leaderbo
 import NotificationsView from '@/modules/notifications/views/NotificationsView'
 import { PlansView, TransactionsView } from '@/modules/subscriptions'
 import TestAttemptsView from "@/modules/attempts/views/TestAttemptsView"
+import AdminOrganizationsView from '@/modules/admin/views/AdminOrganizationsView'
 
 export default function AppRoutes() {
   return (
@@ -69,6 +70,7 @@ export default function AppRoutes() {
         <Route path="overview" element={<DashboardView role={UserRole.ADMIN} />} />
         <Route path="plans" element={<PlansView userRole={UserRole.ADMIN} />} />
         <Route path="transactions" element={<TransactionsView userRole={UserRole.ADMIN} />} />
+        <Route path="organizations" element={<AdminOrganizationsView />} />
       </Route>
 
       {/* Fallback for undefined routes */}

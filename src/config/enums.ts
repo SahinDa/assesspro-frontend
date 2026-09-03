@@ -28,6 +28,15 @@ export const BookmarkType = {
 
 export type BookmarkTypeEnum = (typeof BookmarkType)[keyof typeof BookmarkType];
 
+export const OrganizationStatus = {
+  ON_HOLD: 0,
+  ACTIVE: 1,
+  DELETED: 2,
+} as const;
+
+export type OrganizationStatusEnum =
+  (typeof OrganizationStatus)[keyof typeof OrganizationStatus];
+  
 export enum CorrectAnswer {
   A = 1,
   B = 2,
