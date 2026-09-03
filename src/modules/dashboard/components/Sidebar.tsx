@@ -44,11 +44,10 @@ export function Sidebar({ role }: SidebarProps) {
         { label: 'History', path: '/student/attempts', icon: History },
         { label: 'Bookmarks', path: '/student/bookmarks', icon: Bookmark },
         { label: 'Leaderboards', path: '/student/leaderboards', icon: Trophy },
-        { label: 'Notifications', path: '/studentfix /notifications', icon: Bell },
+        { label: 'Notifications', path: '/student/notifications', icon: Bell },
         { label: 'Plans & Pricing', path: '/student/plans', icon: CreditCard },
         { label: 'My Transactions', path: '/student/transactions', icon: Receipt },
         { label: 'Performance', path: '/student/performance', icon: BarChart3 },
-        { label: 'Leaderboard', path: '/student/leaderboard', icon: Trophy },
       ]
 
   return (
