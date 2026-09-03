@@ -17,6 +17,7 @@ import { CorrectAnswer } from '@/config/enums'
 interface TestSetDetailsViewProps {
   testSet: TestSetItem
   testName?: string
+  readOnly?:boolean
   onBack: () => void
   onEdit: () => void
   onPreview?: () => void
@@ -32,6 +33,7 @@ const ENUM_TO_LETTER: Record<number, string> = {
 export default function TestSetDetailsView({
   testSet,
   testName = 'Test Series',
+  readOnly = false,
   onBack,
   onEdit,
   onPreview,
@@ -68,7 +70,7 @@ export default function TestSetDetailsView({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
-          {onPreview && (
+          {!readOnly && (
             <Button
               type="button"
               variant="outline"
@@ -80,7 +82,7 @@ export default function TestSetDetailsView({
               <span>Preview Mode</span>
             </Button>
           )}
-          <Button
+          {!readOnly && (  <Button
             type="button"
             size="sm"
             onClick={onEdit}
@@ -89,6 +91,7 @@ export default function TestSetDetailsView({
             <Edit3 className="h-3.5 w-3.5" />
             <span>Edit Set & Questions</span>
           </Button>
+          )}
         </div>
       </div>
 

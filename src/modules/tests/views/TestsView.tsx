@@ -7,7 +7,8 @@ import {
   Layers, 
   ArrowRight, 
   Plus, 
-  FolderPlus 
+  FolderPlus,
+  ShieldAlert
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -23,7 +24,7 @@ import TestFormModal from '../components/TestFormModal'
 import DeleteTestDialog from '../components/DeleteTestDialog'
 import TestSetsView from './TestSetsView'
 import type { TestFormData } from '../utils/testValidation'
-import { UserRole, type UserRoleType } from '@/modules/subscriptions/utils/subscriptionValidation'
+import { UserRole, type UserRoleType } from '@/config/enums'
 
 export interface TestItem {
   id: string
@@ -59,19 +60,25 @@ const MOCK_TESTS: TestItem[] = [
   },
 ]
 
-interface TestsViewProps {
+export interface TestsViewProps {
   userRole?: UserRoleType
+  readOnly?: boolean
+  orgId?: string
   onStartTestSet?: (setId: string, testName: string) => void
 }
 
 export default function TestsView({
   userRole = UserRole.ORGANIZATION,
+  readOnly = false,
+  orgId,
   onStartTestSet,
 }: TestsViewProps) {
   const [tests, setTests] = useState<TestItem[]>(MOCK_TESTS)
   const [selectedTest, setSelectedTest] = useState<TestItem | null>(null)
 
   const isStudent = userRole === UserRole.STUDENT
+  const isAdmin = userRole === UserRole.ADMIN || readOnly
+  const isOrgAuthor = userRole === UserRole.ORGANIZATION && !readOnly
 
   const [modalState, setModalState] = useState<{
     isOpen: boolean
@@ -90,6 +97,7 @@ export default function TestsView({
         testId={selectedTest.id}
         testName={selectedTest.name}
         userRole={userRole}
+        readOnly={isAdmin}
         onBack={() => setSelectedTest(null)}
         onTakeTestSet={(setId) => onStartTestSet?.(setId, selectedTest.name)}
       />
@@ -126,20 +134,28 @@ export default function TestsView({
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-              {isStudent ? 'Enrolled Tests' : 'Tests'}
+              {isAdmin ? 'Audit Test Catalog' : isStudent ? 'Enrolled Tests' : 'Tests'}
             </h2>
             <Badge variant="secondary" className="text-[11px] font-semibold bg-slate-100 text-slate-600 rounded-lg px-2">
               {tests.length} {isStudent ? 'Available' : 'Total'}
             </Badge>
+            {isAdmin && (
+              <Badge variant="outline" className="text-[10px] font-bold bg-amber-50 text-amber-800 border-amber-200">
+                Read-Only Audit
+              </Badge>
+            )}
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            {isStudent
+            {isAdmin
+              ? 'Read-only inspection of tenant tests, questions, and scoring configurations.'
+              : isStudent
               ? 'Select an active test series to practice questions and attempt timed mock evaluations.'
               : 'Create, organize, and manage your tests and underlying test sets.'}
           </p>
         </div>
 
-        {!isStudent && tests.length > 0 && (
+        {/* Create Test: ONLY Organization Authors, never Admin or Student */}
+        {isOrgAuthor && tests.length > 0 && (
           <Button 
             onClick={() => setModalState({ isOpen: true, test: null })}
             className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl h-10 px-4 gap-2 shadow-xs cursor-pointer shrink-0"
@@ -159,16 +175,18 @@ export default function TestsView({
 
             <div className="space-y-1">
               <h3 className="text-base font-bold text-slate-900">
-                {isStudent ? 'No Tests Available' : 'No Tests Created Yet'}
+                {isAdmin ? 'No Tests Found for Tenant' : isStudent ? 'No Tests Available' : 'No Tests Created Yet'}
               </h3>
               <p className="text-xs text-slate-500 leading-relaxed">
-                {isStudent
+                {isAdmin
+                  ? 'This organization has not created or published any tests yet.'
+                  : isStudent
                   ? 'There are currently no active mock tests published for your enrolled tier.'
                   : 'Create a test to group and manage your test sets.'}
               </p>
             </div>
 
-            {!isStudent && (
+            {isOrgAuthor && (
               <Button 
                 onClick={() => setModalState({ isOpen: true, test: null })} 
                 className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl h-10 px-5 gap-2 shadow-xs cursor-pointer"
@@ -203,8 +221,8 @@ export default function TestsView({
                     </Badge>
                   </div>
 
-                  {/* 3-Dot menu: Organization / Admin only */}
-                  {!isStudent && (
+                  {/* 3-Dot menu: ONLY Organization Authors, hidden in read-only audit and student */}
+                  {isOrgAuthor && (
                     <div onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer outline-none border-0 bg-transparent">
@@ -251,7 +269,9 @@ export default function TestsView({
                     }}
                     className="w-full h-9 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50/70 border-slate-200 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 flex items-center justify-between px-3.5 transition-all cursor-pointer group/btn"
                   >
-                    <span>{isStudent ? 'Explore Test Sets' : 'Manage Test Sets'}</span>
+                    <span>
+                      {isAdmin ? 'Inspect Test Sets' : isStudent ? 'Explore Test Sets' : 'Manage Test Sets'}
+                    </span>
                     <ArrowRight className="h-3.5 w-3.5 text-slate-400 group-hover/btn:text-white group-hover/btn:translate-x-0.5 transition-transform" />
                   </Button>
                 </div>
@@ -261,8 +281,8 @@ export default function TestsView({
         </div>
       )}
 
-      {/* Organization / Admin Modals */}
-      {!isStudent && (
+      {/* Organization Author Modals */}
+      {isOrgAuthor && (
         <>
           <TestFormModal
             isOpen={modalState.isOpen}

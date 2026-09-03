@@ -67,6 +67,7 @@ interface TestSetsViewProps {
   testId?: string
   testName?: string
   userRole?: UserRoleType
+  readOnly?: boolean
   onBack?: () => void
   onTakeTestSet?: (setId: string) => void
 }
@@ -75,17 +76,18 @@ export default function TestSetsView({
   testId = 'test-1',
   testName = 'Algorithms & Data Structures',
   userRole = UserRole.ORGANIZATION,
+  readOnly = false,
   onBack,
   onTakeTestSet,
 }: TestSetsViewProps) {
   const [testSets, setTestSets] = useState<TestSetItem[]>(INITIAL_MOCK_SETS)
 
-  // Strict role separation: true ONLY for Student, false for Organization/Admin
   const isStudent = userRole === UserRole.STUDENT
+  const isAdmin = userRole === UserRole.ADMIN || readOnly
+  const isOrgAuthor = userRole === UserRole.ORGANIZATION && !readOnly
 
-  // State to track which set the Organization is inspecting in Details View
+  // State to track which set is being inspected in Details View
   const [selectedSetForDetails, setSelectedSetForDetails] = useState<TestSetItem | null>(null)
-
   const [activeRunningSet, setActiveRunningSet] = useState<TestSetItem | null>(null)
 
   // Organization-only modal states
@@ -130,50 +132,56 @@ export default function TestSetsView({
     }
   }
 
-  //  STUDENT ONLY: Launch Active Test Runner
-if (isStudent && activeRunningSet) {
-  return (
-    <TestRunnerView
-      testSetId={activeRunningSet.id}
-      testName={testName}
-      setName={activeRunningSet.name}
-      timerMinutes={activeRunningSet.timer_minutes}
-      positiveMarks={activeRunningSet.positive_marking_value}
-      negativeMarks={activeRunningSet.negative_score_value}
-      isNegativeMarking={activeRunningSet.is_negative_marking}
-      isPreview={false}
-      onExit={() => setActiveRunningSet(null)}
-    />
-  )
-}
-  //  ORGANIZATION ONLY: Render Details View for inspecting questions/configuration
+  // STUDENT ONLY: Launch Active Test Runner
+  if (isStudent && activeRunningSet) {
+    return (
+      <TestRunnerView
+        testSetId={activeRunningSet.id}
+        testName={testName}
+        setName={activeRunningSet.name}
+        timerMinutes={activeRunningSet.timer_minutes}
+        positiveMarks={activeRunningSet.positive_marking_value}
+        negativeMarks={activeRunningSet.negative_score_value}
+        isNegativeMarking={activeRunningSet.is_negative_marking}
+        isPreview={false}
+        onExit={() => setActiveRunningSet(null)}
+      />
+    )
+  }
+
+  // DETAILS VIEW: Shown for both Organization (with edit) AND Admin (read-only)
   if (!isStudent && selectedSetForDetails) {
     return (
       <>
         <TestSetDetailsView
           testSet={selectedSetForDetails}
           testName={testName}
+          readOnly= {!isOrgAuthor}
           onBack={() => setSelectedSetForDetails(null)}
           onEdit={() => {
-            setModalState({ isOpen: true, testSet: selectedSetForDetails })
+            if (!isAdmin) {
+              setModalState({ isOpen: true, testSet: selectedSetForDetails })
+            }
           }}
           onPreview={() => {
             onTakeTestSet?.(selectedSetForDetails.id)
           }}
         />
 
-        {/* Organization Edit Modal */}
-        <TestSetFormModal
-          isOpen={modalState.isOpen}
-          testSet={modalState.testSet}
-          onClose={() => setModalState({ isOpen: false, testSet: null })}
-          onSubmit={handleSaveTestSet}
-        />
+        {/* Organization Edit Modal - Rendered ONLY if not in readOnly/Admin mode */}
+        {isOrgAuthor && (
+          <TestSetFormModal
+            isOpen={modalState.isOpen}
+            testSet={modalState.testSet}
+            onClose={() => setModalState({ isOpen: false, testSet: null })}
+            onSubmit={handleSaveTestSet}
+          />
+        )}
       </>
     )
   }
 
-  //  MAIN TEST SETS GRID VIEW
+  // MAIN TEST SETS GRID VIEW
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -198,16 +206,23 @@ if (isStudent && activeRunningSet) {
             >
               {testSets.length} {testSets.length === 1 ? 'Set' : 'Sets'}
             </Badge>
+            {isAdmin && (
+              <Badge variant="outline" className="text-[10px] font-bold bg-amber-50 text-amber-800 border-amber-200">
+                Audit View
+              </Badge>
+            )}
           </div>
           <p className="text-xs text-slate-500">
-            {isStudent
+            {isAdmin
+              ? 'Inspect test sets and questions for moderation and compliance.'
+              : isStudent
               ? 'Review scoring rules, timer limits, and launch your test attempt.'
               : 'Configure test sets, inspect questions, grading criteria, and countdown timers.'}
           </p>
         </div>
 
-        {/* Create Test Set: Organization Only */}
-        {!isStudent && testSets.length > 0 && (
+        {/* Create Test Set: ONLY Organization Authors */}
+        {isOrgAuthor && testSets.length > 0 && (
           <Button
             type="button"
             onClick={() => setModalState({ isOpen: true, testSet: null })}
@@ -228,17 +243,18 @@ if (isStudent && activeRunningSet) {
 
             <div className="space-y-1">
               <h3 className="text-base font-bold text-slate-900">
-                {isStudent ? 'No Test Sets Published' : 'No Test Sets Yet'}
+                {isAdmin ? 'No Sets Configured' : isStudent ? 'No Test Sets Published' : 'No Test Sets Yet'}
               </h3>
               <p className="text-xs text-slate-500 leading-relaxed">
-                {isStudent
+                {isAdmin
+                  ? 'This test does not have any sets or questions attached.'
+                  : isStudent
                   ? 'There are currently no active question sets configured for this test module.'
                   : 'Create a test set to configure questions, scoring, and timer rules for this assessment.'}
               </p>
             </div>
 
-            {/* Empty State Create Button: Organization Only */}
-            {!isStudent && (
+            {isOrgAuthor && (
               <Button
                 type="button"
                 onClick={() => setModalState({ isOpen: true, testSet: null })}
@@ -267,7 +283,6 @@ if (isStudent && activeRunningSet) {
               <div className="h-1.5 w-full bg-linear-to-r from-indigo-500 via-sky-400 to-teal-400 opacity-80" />
 
               <CardContent className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                {/* Metric Badges */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex flex-wrap gap-1.5">
                     <Badge
@@ -301,8 +316,8 @@ if (isStudent && activeRunningSet) {
                     )}
                   </div>
 
-                  {/* 3-Dot Edit / Delete Menu: Organization Only */}
-                  {!isStudent && (
+                  {/* 3-Dot Menu: ONLY for Organization Authors, hidden in read-only and student */}
+                  {isOrgAuthor && (
                     <div onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer outline-none border-0 bg-transparent">
@@ -333,7 +348,6 @@ if (isStudent && activeRunningSet) {
                   )}
                 </div>
 
-                {/* Title & Description */}
                 <div className="space-y-1.5 flex-1">
                   <h3 className="text-sm font-bold text-slate-900 tracking-tight leading-snug group-hover:text-indigo-600 transition-colors line-clamp-1">
                     {set.name}
@@ -343,7 +357,7 @@ if (isStudent && activeRunningSet) {
                   </p>
                 </div>
 
-                {/* Role-Based Footer Actions */}
+                {/* Footer Buttons */}
                 {isStudent ? (
                   <div className="pt-2 border-t border-slate-100">
                     <Button
@@ -375,7 +389,7 @@ if (isStudent && activeRunningSet) {
                       className="h-8 rounded-lg text-xs font-semibold px-2.5 gap-1.5 border-slate-200 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 cursor-pointer transition-all"
                     >
                       <Eye className="h-3 w-3" />
-                      <span>View Details</span>
+                      <span>{isAdmin ? 'Inspect Questions' : 'View Details'}</span>
                     </Button>
                   </div>
                 )}
@@ -386,7 +400,7 @@ if (isStudent && activeRunningSet) {
       )}
 
       {/* Organization-Only Modals */}
-      {!isStudent && (
+      {isOrgAuthor && (
         <>
           <TestSetFormModal
             isOpen={modalState.isOpen}
