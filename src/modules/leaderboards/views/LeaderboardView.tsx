@@ -10,7 +10,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { UserRole, type UserRoleType } from '@/config/enums'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -104,10 +104,21 @@ const MOCK_DATA: Record<string, LeaderboardRow[]> = {
   ],
 }
 
-export default function LeaderboardView() {
+export interface LeaderboardViewProps {
+  userRole?: UserRoleType
+  orgId?: string
+}
+
+export default function LeaderboardView({
+  userRole = UserRole.ORGANIZATION,
+  orgId: _orgId,
+}: LeaderboardViewProps = {}) {
   const [section, setSection] = useState<LeaderboardSection>('contest')
   const [selectedContestId, setSelectedContestId] = useState<string>(MOCK_CONTESTS[0].id)
-  
+
+  const isAdmin = userRole === UserRole.ADMIN
+  const isStudent = userRole === UserRole.STUDENT
+
   // Default for tests in standings is "all"
   const [selectedTestId, setSelectedTestId] = useState<string>('all')
   // Default for test sets is "all"
@@ -163,7 +174,6 @@ export default function LeaderboardView() {
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6 pb-12">
-      
       {/* 1. Header & Section Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
         <div className="space-y-1">
@@ -174,9 +184,18 @@ export default function LeaderboardView() {
             <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold px-2.5 py-0.5 shadow-none">
               {isContestSection ? 'Contest Standings' : 'Overall Standings'}
             </Badge>
+            {isAdmin && (
+              <Badge variant="outline" className="text-[10px] font-bold bg-amber-50 text-amber-800 border-amber-200">
+                Audit View
+              </Badge>
+            )}
           </div>
           <div className="text-xs text-slate-500">
-            {isContestSection
+            {isAdmin
+              ? 'Tenant-level candidate rankings, proctoring violation metrics, and assessment standings.'
+              : isStudent
+              ? 'Review your percentile, track top scores, and monitor event standings.'
+              : isContestSection
               ? 'Final verified rankings, candidate scores, and proctoring metrics for competitive events.'
               : 'Cumulative student standings across practice test sets and single tests.'}
           </div>
@@ -211,10 +230,9 @@ export default function LeaderboardView() {
         </Tabs>
       </div>
 
-      {/* 2. Control Toolbar (Expanded Search Field Width) */}
+      {/* 2. Control Toolbar */}
       <Card className="p-3.5 border-slate-200 bg-white shadow-xs rounded-2xl">
         <div className="flex flex-row items-center justify-between gap-4 w-full">
-          
           {/* Target Assessment Selectors */}
           <div className="flex-1 min-w-0">
             {isContestSection ? (
@@ -227,8 +245,10 @@ export default function LeaderboardView() {
                   <Select
                     value={selectedContestId}
                     onValueChange={(val) => {
-                      setSelectedContestId(val)
-                      setSearchQuery('')
+                      if (val) {
+                        setSelectedContestId(val)
+                        setSearchQuery('')
+                      }
                     }}
                   >
                     <SelectTrigger className="h-10 w-full text-xs font-semibold rounded-xl border-slate-200 bg-slate-50/70 text-slate-900 hover:bg-slate-50 focus:ring-1 focus:ring-indigo-500 truncate">
@@ -248,14 +268,13 @@ export default function LeaderboardView() {
               </div>
             ) : (
               <div className="flex flex-row items-center gap-2.5 w-full min-w-0">
-                
                 {/* 1. Test Selector */}
                 <div className="flex-1 min-w-0">
                   <Select
                     value={selectedTestId}
                     onValueChange={(val) => {
-                      setSelectedTestId(val)
-                      setSelectedSetId('all') // Reset test set to 'all' whenever test changes
+                      setSelectedTestId(val ?? 'all')
+                      setSelectedSetId('all')
                       setSearchQuery('')
                     }}
                   >
@@ -280,13 +299,13 @@ export default function LeaderboardView() {
                   </Select>
                 </div>
 
-                {/* 2. Test Set Selector (Rendered conditionally ONLY when a specific test is selected) */}
+                {/* 2. Test Set Selector */}
                 {selectedTestId !== 'all' && (
                   <div className="flex-1 min-w-0">
                     <Select
                       value={selectedSetId}
                       onValueChange={(val) => {
-                        setSelectedSetId(val)
+                        setSelectedSetId(val ?? 'all')
                         setSearchQuery('')
                       }}
                     >
@@ -311,13 +330,12 @@ export default function LeaderboardView() {
                     </Select>
                   </div>
                 )}
-
               </div>
             )}
           </div>
 
-       {/* Search Input Container */}
-       <div className="flex items-center w-52 sm:w-72 md:w-80 lg:w-96 shrink-0 h-10 px-3.5 gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 focus-within:bg-white focus-within:border-indigo-500 transition-colors">
+          {/* Search Input Container */}
+          <div className="flex items-center w-52 sm:w-72 md:w-80 lg:w-96 shrink-0 h-10 px-3.5 gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 focus-within:bg-white focus-within:border-indigo-500 transition-colors">
             <Search className="h-4 w-4 text-slate-400 shrink-0 select-none pointer-events-none" />
             <input
               type="text"
@@ -332,13 +350,12 @@ export default function LeaderboardView() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setSearchQuery('')}
-                className="h-6 w-6 p-0 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-md shrink-0"
+                className="h-6 w-6 p-0 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-md shrink-0 cursor-pointer"
               >
                 <X className="h-3.5 w-3.5" />
               </Button>
             )}
           </div>
-
         </div>
       </Card>
 

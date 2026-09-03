@@ -22,6 +22,8 @@ import { TransactionsView } from '@/modules/subscriptions';
 import { UserRole } from '@/config/enums';
 import TestsView from '@/modules/tests/views/TestsView';
 import OrgStudentsView from '@/modules/students/views/OrgStudentsView';
+import LeaderboardView from '@/modules/leaderboards/views/LeaderboardView';
+
 
 interface AdminOrgDetailViewProps {
   org: OrgItem;
@@ -29,7 +31,9 @@ interface AdminOrgDetailViewProps {
 }
 
 export default function AdminOrgDetailView({ org, onBack }: AdminOrgDetailViewProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'tests' | 'attempts' | 'members' | 'billing'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'tests' | 'attempts' | 'members' | 'leaderboard' | 'billing'
+  >('overview')
   const [status, setStatus] = useState<OrganizationStatusEnum>(org.status);
 
   const toggleStatus = () => {
@@ -120,6 +124,9 @@ export default function AdminOrgDetailView({ org, onBack }: AdminOrgDetailViewPr
           <TabsTrigger value="members" className="rounded-xl text-xs font-semibold">
             Members ({org.members_count})
           </TabsTrigger>
+          <TabsTrigger value="leaderboard" className="rounded-xl text-xs font-semibold">
+            Leaderboard
+          </TabsTrigger>
           <TabsTrigger value="billing" className="rounded-xl text-xs font-semibold">
             Subscription & Billing
           </TabsTrigger>
@@ -152,6 +159,12 @@ export default function AdminOrgDetailView({ org, onBack }: AdminOrgDetailViewPr
               readOnly={true}
               orgId={org.id}
             />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="leaderboard" className="space-y-4">
+          <div className="bg-slate-50/50 p-2 sm:p-4 rounded-3xl">
+            <LeaderboardView userRole={UserRole.ADMIN} orgId={org.id} />
           </div>
         </TabsContent>
 
