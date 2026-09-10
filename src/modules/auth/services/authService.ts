@@ -1,6 +1,6 @@
 import { apiClient } from '@/lib/apiClient';
 import { AUTH_ENDPOINTS } from '../constants/endpoints';
-import { LoginPayload, AuthResponse,RegisterPayload,RegisterResponse} from '../types';
+import { LoginPayload, AuthResponse,RegisterPayload,RegisterResponse} from '../types/auth.types';
 
 export const authService = {
   login: async (payload: LoginPayload): Promise<AuthResponse> => {

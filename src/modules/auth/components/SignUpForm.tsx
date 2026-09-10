@@ -20,7 +20,7 @@ export default function SignUpForm() {
     resolver: zodResolver(signUpSchema),
   })
 
-  const onSubmit = (data: SignUpFormData) => {
+  const onSubmit = async(data: SignUpFormData) => {
     const {confirmPassword,...payload} = data;
     try{
       const response = await executeRegister(payload);
