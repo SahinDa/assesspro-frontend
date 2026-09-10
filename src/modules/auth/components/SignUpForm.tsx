@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { useRegister } from '../hooks/useRegister'
 import { UserPlus, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 export default function SignUpForm() {
   const navigate = useNavigate()
+  const { register: executeRegister, isLoading, error: apiError } = useRegister();  
   const {
     register,
     handleSubmit,
@@ -19,9 +21,14 @@ export default function SignUpForm() {
   })
 
   const onSubmit = (data: SignUpFormData) => {
-    console.log("Signup Form Data Submitted:", data)
-    alert("Signup validation passed! Check console for data payload.")
-    navigate(`/verify-otp?email=${encodeURIComponent(data.email)}`)
+    const {confirmPassword,...payload} = data;
+    try{
+      const response = await executeRegister(payload);
+      navigate(`/verify-otp?email=${encodeURIComponent(data.email)}`)
+    }catch{
+      const errorMsg = err.response?.data?.message || 'Registration failed. Please try again.';
+      alert(errorMsg);
+    }
   }
 
   return (
