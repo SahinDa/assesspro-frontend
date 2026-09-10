@@ -1,4 +1,4 @@
-import { UserRoleType } from '@/config/enums';
+import type { UserRoleType } from '@/config/enums';
 
 export interface User {
   user_id: string;
