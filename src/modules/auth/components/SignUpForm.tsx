@@ -25,7 +25,7 @@ export default function SignUpForm() {
     try{
       const response = await executeRegister(payload);
       navigate(`/verify-otp?email=${encodeURIComponent(data.email)}`)
-    }catch{
+    }catch(err:any){
       const errorMsg = err.response?.data?.message || 'Registration failed. Please try again.';
       alert(errorMsg);
     }
