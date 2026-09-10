@@ -1,6 +1,13 @@
 import { apiClient } from '@/lib/apiClient';
 import { AUTH_ENDPOINTS } from '../constants/endpoints';
-import type { LoginPayload, AuthResponse,RegisterPayload,RegisterResponse} from '../types/auth.types';
+import type {
+   LoginPayload, 
+   AuthResponse,
+   RegisterPayload,
+   RegisterResponse,
+   VerifyOtpPayload,
+   VerifyOtpResponse,
+  } from '../types/auth.types';
 
 export const authService = {
   login: async (payload: LoginPayload): Promise<AuthResponse> => {
@@ -10,5 +17,10 @@ export const authService = {
   register: async(payload:RegisterPayload):Promise<RegisterResponse>=>{
     const res = await apiClient.post<RegisterResponse>(AUTH_ENDPOINTS.REGISTER,payload);
     return res.data;
+  },
+  verifyotp: async(payload:VerifyOtpPayload):Promise<VerifyOtpResponse> =>{
+    const res = await apiClient.post<VerifyOtpResponse>(AUTH_ENDPOINTS.VERIFYOTP,payload);
+    return res.data;
   }
+
 };

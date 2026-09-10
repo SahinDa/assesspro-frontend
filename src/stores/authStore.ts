@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
-import { User } from '@/modules/user/types';
-import { UserRole } from '@/types/enums';
+import type { User } from '@/modules/user/types';
+import type { UserRole } from '@/types/enums';
 
 interface AuthState {
   user: User | null;

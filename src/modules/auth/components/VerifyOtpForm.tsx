@@ -5,6 +5,7 @@ import { verifyOtpSchema, type VerifyOtpFormData } from '../utils/authValidation
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useVerifyOtp } from '../hooks/useVerifyOtp'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { ShieldCheck, Loader2 } from 'lucide-react'
 
@@ -12,15 +13,20 @@ export default function VerifyOtpForm() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const email = searchParams.get('email') || ''
+  const { verifyotp, isLoading, error: apiError } =  useVerifyOtp();  
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<VerifyOtpFormData>({
     resolver: zodResolver(verifyOtpSchema),
     defaultValues: { email, otp: '' },
   })
 
-  const onSubmit = (data: VerifyOtpFormData) => {
-    console.log("Verify OTP Payload:", data)
-    navigate('/role-selection')
+  const onSubmit = async(data: VerifyOtpFormData) => {
+    try{
+     await verifyotp(data)
+      navigate('/role-selection')
+    }catch(err){
+
+    }
   }
 
   const handleResendOtp = () => {
