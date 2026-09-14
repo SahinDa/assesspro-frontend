@@ -5,12 +5,17 @@ import { roleSelectionSchema, type RoleSelectionFormData } from '../utils/userVa
 import { UserRole } from '@/config/enums'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter,CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { GraduationCap, Building2, Loader2, CheckCircle2, Trophy, Timer, Users, BarChart3, ShieldCheck, ArrowRight } from 'lucide-react'
+import { GraduationCap, Building2, Loader2, CheckCircle2, Trophy, Timer, Users, BarChart3, ShieldCheck, ArrowRight,AlertCircle } from 'lucide-react'
+import { useState } from 'react'
+import { userService } from '../services/userService'
+import { useAuthStore } from '@/stores/authStore'
 
 export default function RoleSelectionForm() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const email = searchParams.get('email') || ''
+  const [serverError, setServerError] = useState<string | null>(null)
+  const setUser = useAuthStore((state: any) => state.setUser || state.login)
 
   const { handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<RoleSelectionFormData>({
     resolver: zodResolver(roleSelectionSchema),
@@ -18,10 +23,24 @@ export default function RoleSelectionForm() {
 
   const selectedRole = watch('role')
 
-  const onSubmit = (data: RoleSelectionFormData) => {
+  const onSubmit = async(data: RoleSelectionFormData) => {
     console.log("Role Selection Payload:", { email, role: data.role })
     if (data.role === UserRole.STUDENT) {
-      navigate('/student/dashboard')
+      try {
+        // 1. Fire zero-payload endpoint to set student role on backend
+        const updatedUser = await userService.registerAsUser()
+        
+        // 2. Sync updated user entity with Zustand store
+        if (setUser && updatedUser) {
+          setUser(updatedUser)
+        }
+  
+        // 3. Redirect to student portal
+        navigate('/student/dashboard')
+      } catch (err: any) {
+        const message = err.response?.data?.message || 'Failed to complete registration. Please try again.'
+        setServerError(message)
+      }
     } else {
       navigate('/organization/setup')
     }
@@ -153,6 +172,12 @@ export default function RoleSelectionForm() {
           )}
         </div>
 
+        {serverError && (
+  <div className="mx-5 mb-2 flex items-center gap-2 p-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-[11px]">
+    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+    <span>{serverError}</span>
+  </div>
+)}
         <CardFooter className="pt-2 pb-4 px-5">
           <Button 
             type="submit" 
