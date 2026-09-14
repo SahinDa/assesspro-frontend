@@ -5,6 +5,10 @@ import { organizationInputSchema,type OrganizationInputDTO } from '../utils/orga
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { useState } from 'react'
+import { organizationService } from '../services/organizationService'
+import { UserRole } from '@/config/enums'
+import { useAuthStore } from '@/stores/authStore'
 
 export function OrganizationSetupForm() {
   const navigate = useNavigate()
@@ -13,6 +17,7 @@ export function OrganizationSetupForm() {
     register,
     handleSubmit,
     watch,
+    setError,
     formState: { errors, isValid, touchedFields },
   } = useForm<OrganizationInputDTO>({
     resolver: zodResolver(organizationInputSchema),
@@ -20,10 +25,35 @@ export function OrganizationSetupForm() {
   })
 
   const currentName = watch('name', '')
+  const updateUser = useAuthStore((state) => state.updateUser)
 
-  const onSubmit = (data: OrganizationInputDTO) => {
+  const onSubmit = async(data: OrganizationInputDTO) => {
     console.log('Valid Form Data:', data)
-    navigate('/dashboard/organization')
+    try{
+      const organization = await organizationService.create(data);
+      if(organization){
+        updateUser({                                              
+          role: UserRole.ORGANIZATION,
+          org_id: organization.id,
+          org_name: organization.name,
+          org_status: organization.status,
+        })
+      }
+      navigate('/dashboard/organization')
+    }catch(err){
+      const status = err.response?.status
+      const backendMessage = err.response?.data?.message
+
+      if (status === 409) {
+        setError('name', {
+          type: 'manual',
+          message: backendMessage || 'An organization with this name already exists.',
+        })
+      } else {
+        setServerError(backendMessage || 'Failed to create organization. Please try again.')
+      }
+    }
+
   }
 
   return (
