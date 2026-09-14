@@ -15,6 +15,12 @@ export interface User {
   updated_at: string;
 }
 
+export interface AuthUser extends User {
+  org_id?: string | null;
+  org_name?: string | null;
+  org_status?: OrganizationStatus | number | null;
+}
+
 export interface UpdateUserProfileDto {
   firstname?: string;
   lastname?: string;
