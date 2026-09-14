@@ -28,7 +28,7 @@ export function OrganizationSetupForm() {
   const updateUser = useAuthStore((state) => state.updateUser)
 
   const onSubmit = async(data: OrganizationInputDTO) => {
-    console.log('Valid Form Data:', data)
+    setServerError(null);
     try{
       const organization = await organizationService.create(data);
       if(organization){
