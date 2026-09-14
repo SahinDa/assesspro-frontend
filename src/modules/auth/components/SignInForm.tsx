@@ -7,9 +7,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { LogIn, Loader2 } from 'lucide-react'
+import { useLogin } from '../hooks/useLogin'
 
 export default function SignInForm() {
   const navigate = useNavigate()
+  const { login, isLoading, error: apiError } = useLogin();
 
   const {
     register,
@@ -19,9 +21,12 @@ export default function SignInForm() {
     resolver: zodResolver(signInSchema),
   })
 
-  const onSubmit = (data: SignInFormData) => {
-    console.log("Sign In Form Data Submitted:", data)
-    alert("Sign In validation passed! Check console for payload.")
+  const onSubmit = async(data: SignInFormData) => {
+    try{
+      await login(data)
+    }catch(err){
+
+    }
   }
 
   return (
@@ -42,6 +47,12 @@ export default function SignInForm() {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-3 pb-2">
+
+        {apiError && (
+            <div className="p-2 text-xs rounded bg-rose-50 border border-rose-200 text-rose-600 font-medium">
+              {apiError}
+            </div>
+          )}
           <div className="space-y-1">
             <Label htmlFor="email" className="text-xs font-medium text-slate-700">Email</Label>
             <Input id="email" type="email" placeholder="name@example.com" className="h-9 text-sm bg-slate-50/50 border-slate-200" {...register('email')} />
@@ -66,7 +77,7 @@ export default function SignInForm() {
         </CardContent>
 
         <CardFooter className="flex flex-col space-y-3 pt-2 pb-5">
-          <Button type="submit" className="w-full h-10 bg-slate-900 hover:bg-black text-white font-medium text-sm shadow-sm transition-all" disabled={isSubmitting}>
+          <Button type="submit" className="w-full h-10 bg-slate-900 hover:bg-black text-white font-medium text-sm shadow-sm transition-all" disabled={isSubmitting || isLoading}>
             {isSubmitting ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" /> Signing In...

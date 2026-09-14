@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '@/modules/auth/services/auth.service';
+import { authService } from '@/modules/auth/services/authService';
 import { useAuthStore } from '@/stores/authStore';
-import { LoginPayload } from '@/modules/auth/types';
+import type { LoginPayload } from '@/modules/auth/types/auth.types';
+import { UserRole } from '@/config/enums';
 
 export function useLogin() {
   const [isLoading, setIsLoading] = useState(false);
@@ -20,12 +21,27 @@ export function useLogin() {
       const response = await authService.login(credentials);
 
       // 2. State Mutation
-      loginToStore(response.user);
-
+      loginToStore(response.data);
       // 3. Navigation
-      navigate('/dashboard');
+      switch (response.data.role) {
+        case UserRole.ORGANIZATION:
+            navigate('/dashboard/organization');
+          break;
 
-      return response.user;
+        case UserRole.ADMIN:
+          navigate('/admin/overview');
+          break;
+
+        case UserRole.STUDENT:
+          navigate('/student/dashboard');
+          break;
+
+        default:
+          navigate('/role-selection');
+          break;
+      }
+
+      return response.data;
     } catch (err: any) {
       const message = err.response?.data?.message || 'Failed to login';
       setError(message);
