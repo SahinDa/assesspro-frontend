@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
-import { organizationInputSchema,type OrganizationInputDTO } from '../types/organization.types'
+import { organizationInputSchema,type OrganizationInputDTO } from '../utils/organizationValidation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react'
