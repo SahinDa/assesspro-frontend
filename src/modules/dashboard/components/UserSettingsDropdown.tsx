@@ -1,17 +1,17 @@
 // src/modules/organization/components/UserSettingsDropdown.tsx
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, Settings, LogOut, ShieldCheck, ChevronDown } from 'lucide-react'
+import { User, Settings, LogOut, ShieldCheck, ChevronDown, Loader2 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { UserRole, type UserRoleType } from '@/config/enums'
+import { useLogout } from '@/modules/auth/hooks/useLogout'
 
 interface UserSettingsDropdownProps {
   userName: string
   userEmail: string
   role?: UserRoleType
   avatarUrl?: string
-  onSignOut?: () => void
 }
 
 export function UserSettingsDropdown({
@@ -19,11 +19,12 @@ export function UserSettingsDropdown({
   userEmail,
   role = UserRole.STUDENT,
   avatarUrl,
-  onSignOut,
 }: UserSettingsDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
+
+  const { logout, isLoggingOut } = useLogout()
 
   const isAdmin = role === UserRole.ADMIN
   const isOrg = role === UserRole.ORGANIZATION
@@ -43,26 +44,25 @@ export function UserSettingsDropdown({
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      if (isLoggingOut) return
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  }, [isLoggingOut])
 
   const handleNavigation = (path: string) => {
     setIsOpen(false)
     navigate(path)
   }
 
-  const handleLogout = () => {
+  // Straightforward logout logic
+  const handleLogout = async () => {
+    if (isLoggingOut) return
+    await logout()
     setIsOpen(false)
-    if (onSignOut) {
-      onSignOut()
-    } else {
-      navigate('/signin', { replace: true })
-    }
   }
 
   return (
@@ -129,11 +129,16 @@ export function UserSettingsDropdown({
 
           <button
             type="button"
+            disabled={isLoggingOut}
             onClick={handleLogout}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-rose-600 rounded-xl cursor-pointer hover:bg-rose-50/50 transition-colors text-left font-medium"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-rose-600 rounded-xl cursor-pointer hover:bg-rose-50/50 transition-colors text-left font-medium disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <LogOut className="h-3.5 w-3.5 text-rose-500" />
-            <span>Log out</span>
+            {isLoggingOut ? (
+              <Loader2 className="h-3.5 w-3.5 text-rose-500 animate-spin" />
+            ) : (
+              <LogOut className="h-3.5 w-3.5 text-rose-500" />
+            )}
+            <span>{isLoggingOut ? 'Logging out...' : 'Log out'}</span>
           </button>
         </div>
       )}
