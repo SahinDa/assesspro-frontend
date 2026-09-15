@@ -11,6 +11,8 @@ import type {
    ForgotPasswordResponse,
    ResetPasswordPayload,
    ResetPasswordResponse,
+   ResendOtpPayload,
+   ResendOtpResponse,
   } from '../types/auth.types';
 
 export const authService = {
@@ -33,5 +35,9 @@ export const authService = {
   resetpassword: async(payload:ResetPasswordPayload ):Promise<ResetPasswordResponse> =>{
     const res = await apiClient.post<ResetPasswordResponse>(AUTH_ENDPOINTS.RESETPASSWORD,payload);
     return res.data;
-  }
+  },
+  resendotp: async(payload:ResendOtpPayload ):Promise<ResendOtpResponse> =>{
+    const res = await apiClient.post<ResendOtpResponse>(AUTH_ENDPOINTS.RESENDOTP,payload);
+    return res.data;
+  },
 };

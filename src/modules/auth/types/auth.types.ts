@@ -50,3 +50,11 @@ export interface ForgotPasswordResponse {
  message:string;
  user: User;
  }
+
+ export interface ResendOtpPayload {
+  email: string;
+}
+
+export interface ResendOtpResponse {
+  message: string;
+}

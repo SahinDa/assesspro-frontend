@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState,useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useVerifyOtp } from '../hooks/useVerifyOtp'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { ShieldCheck, Loader2,AlertCircle } from 'lucide-react'
+import { ShieldCheck, Loader2,AlertCircle, CheckCircle2 } from 'lucide-react'
+import { authService } from '../services/authService'
 
 export default function VerifyOtpForm() {
   const navigate = useNavigate()
@@ -17,6 +18,19 @@ export default function VerifyOtpForm() {
   const { verifyotp, isLoading, error: apiError } =  useVerifyOtp(); 
   const [serverError, setServerError] = useState<string | null>(null) 
 
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [isResending, setIsResending] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
+
+  // 60-second countdown ticker
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const timer = setInterval(() => {
+      setCooldown((prev) => prev - 1)
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [cooldown])
+
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<VerifyOtpFormData>({
     resolver: zodResolver(verifyOtpSchema),
     defaultValues: { email, otp: '' },
@@ -24,6 +38,7 @@ export default function VerifyOtpForm() {
 
   const onSubmit = async(data: VerifyOtpFormData) => {
     setServerError(null)
+    setSuccessMessage(null)
     try{
      await verifyotp(data)
       navigate('/role-selection')
@@ -37,9 +52,27 @@ export default function VerifyOtpForm() {
     }
   }
 
-  const handleResendOtp = () => {
-    console.log("Resend OTP for:", email)
-    alert("New OTP sent to your email!")
+  const handleResendOtp = async() => {
+    if (!email || cooldown > 0 || isResending) return
+
+    setIsResending(true)
+    setServerError(null)
+    setSuccessMessage(null)
+
+    try {
+      const res = await authService.resendotp({ email })
+      const message = res?.message || 'A new verification code has been sent to your email.'
+      setSuccessMessage(message)
+      setCooldown(60) // Start 60-second rate-limit countdown
+    } catch (err: any) {
+      const rawMessage = err?.response?.data?.message || err?.message
+      const message = Array.isArray(rawMessage)
+        ? rawMessage[0]
+        : rawMessage || 'Failed to resend OTP. Please try again later.'
+      setServerError(message)
+    } finally {
+      setIsResending(false)
+    }
   }
 
   return (
@@ -65,6 +98,12 @@ export default function VerifyOtpForm() {
               <span>{serverError}</span>
             </div>
           )}
+          {successMessage && (
+            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <span>{successMessage}</span>
+            </div>
+          )}
           <Label htmlFor="otp" className="text-xs font-medium text-slate-700">6-Digit OTP</Label>
           <Input 
             id="otp" 
@@ -86,8 +125,17 @@ export default function VerifyOtpForm() {
             variant="outline" 
             className="w-full h-9 text-xs border-slate-200 text-slate-700 hover:bg-slate-50"
             onClick={handleResendOtp}
+            disabled={cooldown > 0 || isResending || isSubmitting || isLoading}
           >
-            Resend OTP
+           {isResending ? (
+              <span className="flex items-center gap-1.5">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Sending...
+              </span>
+            ) : cooldown > 0 ? (
+              `Resend OTP in ${cooldown}s`
+            ) : (
+              "Resend OTP"
+            )}
           </Button>
         </CardFooter>
       </form>

@@ -4,4 +4,5 @@ export const AUTH_ENDPOINTS = {
     VERIFYOTP:'/auth/verify-otp',
     FORGOTPASSWORD:'/auth/forgot-password',
     RESETPASSWORD:'/auth/reset-password',
+    RESENDOTP:'/auth/resend-otp',
   } as const;
