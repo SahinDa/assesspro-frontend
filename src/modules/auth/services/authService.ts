@@ -13,6 +13,7 @@ import type {
    ResetPasswordResponse,
    ResendOtpPayload,
    ResendOtpResponse,
+   LogoutResponse,
   } from '../types/auth.types';
 
 export const authService = {
@@ -38,6 +39,10 @@ export const authService = {
   },
   resendotp: async(payload:ResendOtpPayload ):Promise<ResendOtpResponse> =>{
     const res = await apiClient.post<ResendOtpResponse>(AUTH_ENDPOINTS.RESENDOTP,payload);
+    return res.data;
+  },
+  logout: async():Promise<LogoutResponse> =>{
+    const res = await apiClient.post<LogoutResponse>(AUTH_ENDPOINTS.LOGOUT);
     return res.data;
   },
 };

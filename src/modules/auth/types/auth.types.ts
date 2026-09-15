@@ -58,3 +58,7 @@ export interface ForgotPasswordResponse {
 export interface ResendOtpResponse {
   message: string;
 }
+
+export interface LogoutResponse {
+  message:string;
+}
