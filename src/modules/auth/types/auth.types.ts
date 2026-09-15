@@ -40,3 +40,13 @@ export interface ForgotPasswordPayload {
 export interface ForgotPasswordResponse {
   message:string;
  }
+
+ export interface ResetPasswordPayload{
+ email:string;
+ token:string;
+ password: string;
+ }
+ export interface ResetPasswordResponse{
+ message:string;
+ user: User;
+ }

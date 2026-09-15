@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -7,10 +8,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { LockKeyhole, Loader2, AlertCircle } from 'lucide-react'
+import { authService } from '../services/authService'
+import { useAuthStore } from '@/stores/authStore'
+import { UserRole } from '@/config/enums'
 
 export default function ResetPasswordForm() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+
+  const loginToStore = useAuthStore((state) => state.login)
+  const [serverError, setServerError] = useState<string | null>(null)
 
   const token = searchParams.get('token') || ''
   const email = searchParams.get('email') || ''
@@ -29,15 +36,44 @@ export default function ResetPasswordForm() {
     },
   })
 
-  const onSubmit = (data: ResetPasswordFormData) => {
-    // This sends { email, token, password } to your backend API
-    console.log("Reset Password Payload sent to backend:", {
-      email: data.email,
-      token: data.token,
-      password: data.password,
-    })
-    alert("Password reset successfully!")
-    navigate('/signin')
+  const onSubmit = async (data: ResetPasswordFormData) => {
+    setServerError(null)
+
+    try {
+
+      const res = await authService.resetpassword({
+        email: data.email || email,
+        token: data.token || token,
+        password: data.password,
+      })
+
+      const user = res?.data
+
+      if (!user) {
+        throw new Error('User profile missing from response')
+      }
+      loginToStore(user)
+
+      switch (user.role) {
+        case UserRole.ORGANIZATION:
+          navigate('/dashboard/organization')
+          break;
+
+        case UserRole.ADMIN:
+          navigate('/admin/overview')
+          break;
+
+        case UserRole.STUDENT:
+          navigate('/student/dashboard')
+          break;
+
+        default:
+          navigate('/role-selection')
+          break;
+      }
+    } catch (err: any) {
+      setServerError(err.response?.data?.message || 'Failed to reset password. Please try again.')
+    }
   }
 
   // Safety check if the link is broken/missing parameters
@@ -53,8 +89,8 @@ export default function ResetPasswordForm() {
             This password reset link is invalid or has expired.
           </p>
         </div>
-        <Button 
-          onClick={() => navigate('/forgot-password')} 
+        <Button
+          onClick={() => navigate('/forgot-password')}
           className="w-full h-10 bg-slate-900 hover:bg-black text-white text-sm font-medium"
         >
           Request New Link
@@ -66,7 +102,7 @@ export default function ResetPasswordForm() {
   return (
     <Card className="w-full shadow-xl border-slate-200/80 bg-white rounded-2xl overflow-hidden">
       <div className="h-1.5 bg-slate-900" />
-      
+
       <CardHeader className="space-y-1 text-center pb-3 pt-5">
         <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-900 mb-1">
           <LockKeyhole className="h-4 w-4" />
@@ -85,6 +121,12 @@ export default function ResetPasswordForm() {
         <input type="hidden" {...register('token')} />
 
         <CardContent className="space-y-3 pb-2">
+          {serverError && (
+            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{serverError}</span>
+            </div>
+          )}
           <div className="space-y-1">
             <Label htmlFor="password" className="text-xs font-medium text-slate-700">New Password</Label>
             <Input id="password" type="password" placeholder="••••••••" className="h-9 text-sm bg-slate-50/50 border-slate-200" {...register('password')} />
