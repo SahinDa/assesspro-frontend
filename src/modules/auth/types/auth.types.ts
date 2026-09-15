@@ -33,3 +33,10 @@ export interface VerifyOtpResponse {
   message: string;
   user: User;
 }
+
+export interface ForgotPasswordPayload {
+ email:string;
+}
+export interface ForgotPasswordResponse {
+  message:string;
+ }

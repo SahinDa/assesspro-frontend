@@ -7,6 +7,8 @@ import type {
    RegisterResponse,
    VerifyOtpPayload,
    VerifyOtpResponse,
+   ForgotPasswordPayload,
+   ForgotPasswordResponse,
   } from '../types/auth.types';
 
 export const authService = {
@@ -21,6 +23,9 @@ export const authService = {
   verifyotp: async(payload:VerifyOtpPayload):Promise<VerifyOtpResponse> =>{
     const res = await apiClient.post<VerifyOtpResponse>(AUTH_ENDPOINTS.VERIFYOTP,payload);
     return res.data;
+  },
+  forgotpassword: async(payload:ForgotPasswordPayload ):Promise<ForgotPasswordResponse> =>{
+    const res = await apiClient.post<ForgotPasswordResponse>(AUTH_ENDPOINTS.FORGOTPASSWORD,payload);
+    return res.data;
   }
-
 };

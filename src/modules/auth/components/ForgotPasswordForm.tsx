@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
@@ -7,9 +8,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { KeyRound, Loader2, ArrowLeft } from 'lucide-react'
+import { authService } from '../services/authService'
 
 export default function ForgotPasswordForm() {
   const navigate = useNavigate()
+  const [serverError, setServerError] = useState<string | null>(null)
+  const [isSuccess, setIsSuccess] = useState(false)
 
   const {
     register,
@@ -19,11 +23,27 @@ export default function ForgotPasswordForm() {
     resolver: zodResolver(forgotPasswordSchema),
   })
 
-  const onSubmit = (data: ForgotPasswordFormData) => {
-    console.log("Forgot Password Form Data Submitted:", data)
-    alert("Reset link request sent! Check console for payload.")
+  const onSubmit = async(data: ForgotPasswordFormData) => {
+    try{
+       await authService.forgotpassword(data)
+       setIsSuccess(true)
+    }catch(err){
+      setServerError(err.response?.data?.message || 'Failed to send reset link.')
+    }  
   }
-
+  if (isSuccess) {
+    return (
+      <Card className="w-full p-6 text-center shadow-xl border-slate-200/80 bg-white rounded-2xl">
+        <h3 className="text-lg font-bold text-slate-900">Check Your Email</h3>
+        <p className="text-xs text-slate-500 mt-1 mb-4">
+          We have sent password reset instructions to your email.
+        </p>
+        <Button onClick={() => navigate('/signin')} className="w-full bg-slate-900 text-white text-xs h-9">
+          Back to Sign In
+        </Button>
+      </Card>
+    )
+  }
   return (
     <Card className="w-full shadow-xl border-slate-200/80 bg-white rounded-2xl overflow-hidden">
       <div className="h-1.5 bg-slate-900" />
@@ -42,6 +62,9 @@ export default function ForgotPasswordForm() {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-3 pb-2">
+           {serverError && (
+            <p className="text-xs text-rose-500 font-medium">{serverError}</p>
+          )}
           <div className="space-y-1">
             <Label htmlFor="email" className="text-xs font-medium text-slate-700">Email</Label>
             <Input id="email" type="email" placeholder="name@example.com" className="h-9 text-sm bg-slate-50/50 border-slate-200" {...register('email')} />
