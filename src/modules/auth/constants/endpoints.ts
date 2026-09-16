@@ -6,4 +6,5 @@ export const AUTH_ENDPOINTS = {
     RESETPASSWORD:'/auth/reset-password',
     RESENDOTP:'/auth/resend-otp',
     LOGOUT:'/auth/logout',
+    ME:'/users/me',
   } as const;

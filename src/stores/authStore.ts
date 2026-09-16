@@ -1,11 +1,12 @@
 import { create } from 'zustand';
-import { devtools, persist, createJSONStorage } from 'zustand/middleware';
+import { devtools } from 'zustand/middleware';
 import type { AuthUser } from '@/modules/user/types';
 import { UserRole } from '@/config/enums';
 
 interface AuthState {
   user: AuthUser | null;
   isAuthenticated: boolean;
+  isInitialized: boolean;
   isLoading: boolean;
 
   // Role selectors
@@ -17,15 +18,16 @@ interface AuthState {
   login: (user: AuthUser) => void;
   setUser: (user: AuthUser | null) => void;
   updateUser: (patch: Partial<AuthUser>) => void;
+  setInitialized: (initialized: boolean) => void;
   clearAuth: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   devtools(
-    persist(
       (set, get) => ({
         user: null,
         isAuthenticated: false,
+        isInitialized: false,
         isLoading: false,
 
         isAdmin: () => get().user?.role === UserRole.ADMIN,
@@ -37,6 +39,7 @@ export const useAuthStore = create<AuthState>()(
             user,
             isAuthenticated: true,
             isLoading: false,
+            isInitialized: true,
           }),
 
         setUser: (user: AuthUser | null) =>
@@ -52,22 +55,17 @@ export const useAuthStore = create<AuthState>()(
             user: state.user ? { ...state.user, ...patch } : null,
           })),
 
+          setInitialized: (isInitialized: boolean) =>
+          set({ isInitialized }),
+
         clearAuth: () =>
           set({
             user: null,
             isAuthenticated: false,
             isLoading: false,
+            isInitialized: true,
           }),
       }),
-      {
-        name: 'assesspro-auth-session',
-        storage: createJSONStorage(() => localStorage),
-        partialize: (state) => ({
-          user: state.user,
-          isAuthenticated: state.isAuthenticated,
-        }),
-      }
-    ),
     { name: 'AuthStore' }
   )
 );
