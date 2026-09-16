@@ -15,7 +15,7 @@ export function useAuthInit() {
 
         if (isMounted) {
           // Adjust based on your API envelope (e.g., res.data.data, res.data.user, or res.data)
-          console.log(JSON.stringify(res.data.data))
+
           const userData = res?.data?.data;
           setUser(userData);
         }
