@@ -7,6 +7,7 @@ import { ProtectedRoute } from './guards/ProtectedRoute';
 import { PublicOnlyRoute } from './guards/PublicOnlyRoute';
 import { getHomePathForRole } from './utils/routeUtils';
 import { UserRole } from '@/config/enums';
+import { AppLoader } from '@/common/components/AppLoader';
 
 import { publicRoutes } from './groups/publicRoutes';
 import { onboardingRoutes } from './groups/onboardingRoutes';
@@ -34,7 +35,7 @@ function RootRedirect() {
 
 export default function AppRoutes() {
   return (
-    <Suspense fallback={<PageFallback />}>
+    <Suspense fallback={<AppLoader message="Loading workspace..." />}>
       <Routes>
         {/* Smart Root Entrypoint */}
         <Route path="/" element={<RootRedirect />} />
