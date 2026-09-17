@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import type { AuthUser } from '@/modules/user/types';
+import type { AuthUser , ActiveOrganization } from '@/modules/user/types';
 import { UserRole } from '@/config/enums';
 
 interface AuthState {
@@ -19,6 +19,8 @@ interface AuthState {
   setUser: (user: AuthUser | null) => void;
   updateUser: (patch: Partial<AuthUser>) => void;
   setInitialized: (initialized: boolean) => void;
+  getActiveOrg: () => ActiveOrganization | null;
+  hasActiveOrg: () => boolean;
   clearAuth: () => void;
 }
 
@@ -33,6 +35,9 @@ export const useAuthStore = create<AuthState>()(
         isAdmin: () => get().user?.role === UserRole.ADMIN,
         isOrganization: () => get().user?.role === UserRole.ORGANIZATION,
         isStudent: () => get().user?.role === UserRole.STUDENT,
+
+        getActiveOrg: () => get().user?.activeOrganization ?? null,
+        hasActiveOrg: () => Boolean(get().user?.activeOrganization),
 
         login: (user: AuthUser) =>
           set({

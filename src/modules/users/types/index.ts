@@ -1,5 +1,10 @@
 import type { UserRoleType } from '@/config/enums';
 
+export interface ActiveOrganization {
+  id: string;
+  name: string;
+}
+
 export interface User {
   user_id: string;
   firstname: string;
@@ -11,6 +16,8 @@ export interface User {
   role: UserRoleType;
   status: number;
   profile_pic: string | null;
+  active_org_id:string | null;
+  activeOrganization: ActiveOrganization | null;
   created_at: string;
   updated_at: string;
 }
