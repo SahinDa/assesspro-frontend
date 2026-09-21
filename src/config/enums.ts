@@ -172,3 +172,15 @@ export enum PlatformPlanLimit {
 export enum OrganizationPlanLimit {
   MAX_ACTIVE_PLANS = 3,
 }
+
+
+export enum OwnerType {
+  ADMIN = 1,
+  ORGANIZATION = 2,
+}
+
+export enum TestStatus {
+  ON_HOLD = 0,
+  ACTIVE = 1,
+  DELETED = 2,
+}
