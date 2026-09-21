@@ -25,6 +25,8 @@ import DeleteTestDialog from '../components/DeleteTestDialog'
 import TestSetsView from './TestSetsView'
 import type { TestFormData } from '../utils/testValidation'
 import { UserRole, type UserRoleType } from '@/config/enums'
+import { testService } from '../services/testService';
+import type { CreateTestResponse } from '../types/test.types';
 
 export interface TestItem {
   id: string
@@ -33,32 +35,6 @@ export interface TestItem {
   setsCount: number
 }
 
-const MOCK_TESTS: TestItem[] = [
-  {
-    id: 'test-1',
-    name: 'Machine Learning Foundations',
-    description: 'Comprehensive evaluation covering supervised learning, regression models, and neural network optimization.',
-    setsCount: 4,
-  },
-  {
-    id: 'test-2',
-    name: 'Algorithms & Data Structures',
-    description: 'Assessments on dynamic programming, graph algorithms, trees, and minimum cost flow networks.',
-    setsCount: 2,
-  },
-  {
-    id: 'test-3',
-    name: 'GATE CS Comprehensive Mock',
-    description: 'Full-length multi-subject mock assessments tailored for competitive readiness.',
-    setsCount: 8,
-  },
-  {
-    id: 'test-4',
-    name: 'Database Management Systems & SQL',
-    description: 'Testing indexing, relational algebra, ACID transactions, and query optimization.',
-    setsCount: 3,
-  },
-]
 
 export interface TestsViewProps {
   userRole?: UserRoleType
@@ -66,6 +42,12 @@ export interface TestsViewProps {
   orgId?: string
   onStartTestSet?: (setId: string, testName: string) => void
 }
+const mapResponseToTestItem = (res: CreateTestResponse): TestItem => ({
+  id: res.test_id,
+  name: res.name,
+  description: res.description || '',
+  setsCount: res.total_set ?? 0,
+});
 
 export default function TestsView({
   userRole = UserRole.ORGANIZATION,
@@ -73,7 +55,9 @@ export default function TestsView({
   orgId,
   onStartTestSet,
 }: TestsViewProps) {
-  const [tests, setTests] = useState<TestItem[]>(MOCK_TESTS)
+  const [tests, setTests] = useState<TestItem[]>([])
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [selectedTest, setSelectedTest] = useState<TestItem | null>(null)
 
   const isStudent = userRole === UserRole.STUDENT
@@ -90,6 +74,7 @@ export default function TestsView({
 
   const [deletingTest, setDeletingTest] = useState<TestItem | null>(null)
 
+
   // 1. If a test is selected, render Test Sets View
   if (selectedTest) {
     return (
@@ -104,22 +89,33 @@ export default function TestsView({
     )
   }
 
-  const handleSaveTest = (data: TestFormData, id?: string) => {
+  const handleSaveTest = async(data: TestFormData, id?: string) => {
+    setIsSubmitting(true)
+    try{
     if (id) {
       setTests((prev) =>
         prev.map((t) =>
           t.id === id ? { ...t, name: data.name, description: data.description || '' } : t
         )
       )
+      setModalState({ isOpen: false, test: null })
     } else {
-      const newTest: TestItem = {
-        id: `test-${Date.now()}`,
+      const response = await testService.createTest({
         name: data.name,
-        description: data.description || '',
-        setsCount: 0,
-      }
+        description: data.description?.trim() || undefined,
+      })
+      console.log(JSON.stringify(response))
+       if(response.statusCode === 201){
+      const newTest = mapResponseToTestItem(response.data)
       setTests((prev) => [newTest, ...prev])
+      setModalState({ isOpen: false, test: null })
     }
+  }
+  }catch (error) {
+  console.error('Failed to create test:', error)
+} finally {
+  setIsSubmitting(false)
+}
   }
 
   const handleConfirmDelete = (id: string) => {
