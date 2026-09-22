@@ -25,8 +25,10 @@ import DeleteTestDialog from '../components/DeleteTestDialog'
 import TestSetsView from './TestSetsView'
 import type { TestFormData } from '../utils/testValidation'
 import { UserRole, type UserRoleType } from '@/config/enums'
-import { testService } from '../services/testService';
-import type { CreateTestResponse } from '../types/test.types';
+import type { TestListItem } from '../types/test.types'
+import { useTestList, useTestCount } from '../api/useTestQueries'
+import { useTestMutations } from '../api/useTestMutations'
+import { useActiveOrgId } from '@/hooks/useActiveOrgId'
 
 export interface TestItem {
   id: string
@@ -35,35 +37,42 @@ export interface TestItem {
   setsCount: number
 }
 
-
 export interface TestsViewProps {
   userRole?: UserRoleType
   readOnly?: boolean
   orgId?: string
   onStartTestSet?: (setId: string, testName: string) => void
 }
-const mapResponseToTestItem = (res: CreateTestResponse): TestItem => ({
-  id: res.test_id,
-  name: res.name,
-  description: res.description || '',
-  setsCount: res.total_set ?? 0,
-});
 
 export default function TestsView({
   userRole = UserRole.ORGANIZATION,
   readOnly = false,
-  orgId,
+  orgId: propOrgId,
   onStartTestSet,
 }: TestsViewProps) {
-  const [tests, setTests] = useState<TestItem[]>([])
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [selectedTest, setSelectedTest] = useState<TestItem | null>(null)
+  // Tenant & auth context
+  const { orgId, canManageTests, isAdmin: isTenantAdmin } = useActiveOrgId(propOrgId)
+  
+  // Queries
+  const { data: rawTests = [], isLoading } = useTestList({ offset: 0, limit: 50 }, orgId)
+  const { data: totalCount = 0 } = useTestCount(undefined, orgId)
+
+  // Mutations
+  const { createTest, updateTest, deleteTest } = useTestMutations()
+
+  // Map server items to component's existing TestItem structure so zero UI code changes
+  const tests: TestItem[] = rawTests.map((t) => ({
+    id: t.test_id,
+    name: t.name,
+    description: t.description || '',
+    setsCount: t.total_set ?? 0,
+  }))
 
   const isStudent = userRole === UserRole.STUDENT
-  const isAdmin = userRole === UserRole.ADMIN || readOnly
-  const isOrgAuthor = userRole === UserRole.ORGANIZATION && !readOnly
+  const isAdmin = userRole === UserRole.ADMIN || isTenantAdmin || readOnly
+  const isOrgAuthor = canManageTests && !readOnly
 
+  const [selectedTest, setSelectedTest] = useState<TestItem | null>(null)
   const [modalState, setModalState] = useState<{
     isOpen: boolean
     test: TestItem | null
@@ -71,9 +80,7 @@ export default function TestsView({
     isOpen: false,
     test: null,
   })
-
   const [deletingTest, setDeletingTest] = useState<TestItem | null>(null)
-
 
   // 1. If a test is selected, render Test Sets View
   if (selectedTest) {
@@ -89,38 +96,35 @@ export default function TestsView({
     )
   }
 
-  const handleSaveTest = async(data: TestFormData, id?: string) => {
-    setIsSubmitting(true)
-    try{
-    if (id) {
-      setTests((prev) =>
-        prev.map((t) =>
-          t.id === id ? { ...t, name: data.name, description: data.description || '' } : t
-        )
-      )
+  const handleSaveTest = async (data: TestFormData, id?: string) => {
+    try {
+      if (id) {
+        await updateTest.mutateAsync({
+          testId: id,
+          payload: {
+            name: data.name,
+            description: data.description?.trim() || undefined,
+          },
+        })
+      } else {
+        await createTest.mutateAsync({
+          name: data.name,
+          description: data.description?.trim() || undefined,
+        })
+      }
       setModalState({ isOpen: false, test: null })
-    } else {
-      const response = await testService.createTest({
-        name: data.name,
-        description: data.description?.trim() || undefined,
-      })
-      console.log(JSON.stringify(response))
-       if(response.statusCode === 201){
-      const newTest = mapResponseToTestItem(response.data)
-      setTests((prev) => [newTest, ...prev])
-      setModalState({ isOpen: false, test: null })
+    } catch (error) {
+      console.error('Failed to save test:', error)
     }
   }
-  }catch (error) {
-  console.error('Failed to create test:', error)
-} finally {
-  setIsSubmitting(false)
-}
-  }
 
-  const handleConfirmDelete = (id: string) => {
-    setTests((prev) => prev.filter((t) => t.id !== id))
-    setDeletingTest(null)
+  const handleConfirmDelete = async (id: string) => {
+    try {
+      await deleteTest.mutateAsync({ testId: id })
+      setDeletingTest(null)
+    } catch (error) {
+      console.error('Failed to delete test:', error)
+    }
   }
 
   return (
@@ -133,7 +137,7 @@ export default function TestsView({
               {isAdmin ? 'Audit Test Catalog' : isStudent ? 'Enrolled Tests' : 'Tests'}
             </h2>
             <Badge variant="secondary" className="text-[11px] font-semibold bg-slate-100 text-slate-600 rounded-lg px-2">
-              {tests.length} {isStudent ? 'Available' : 'Total'}
+              {totalCount > 0 ? totalCount : tests.length} {isStudent ? 'Available' : 'Total'}
             </Badge>
             {isAdmin && (
               <Badge variant="outline" className="text-[10px] font-bold bg-amber-50 text-amber-800 border-amber-200">
@@ -162,7 +166,7 @@ export default function TestsView({
       </div>
 
       {/* Grid vs Empty State */}
-      {tests.length === 0 ? (
+      {tests.length === 0 && !isLoading ? (
         <div className="min-h-[50vh] flex items-center justify-center p-4">
           <div className="text-center space-y-4 max-w-sm w-full bg-white border border-slate-200/80 rounded-3xl p-8 shadow-xs">
             <div className="h-14 w-14 mx-auto rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-inner">
@@ -291,7 +295,7 @@ export default function TestsView({
             isOpen={Boolean(deletingTest)}
             test={deletingTest}
             onClose={() => setDeletingTest(null)}
-            onConfirm={handleConfirmDelete}
+            onConfirm={() => deletingTest && handleConfirmDelete(deletingTest.id)}
           />
         </>
       )}
