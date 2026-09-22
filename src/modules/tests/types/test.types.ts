@@ -46,3 +46,49 @@ export interface GetTestListQueryParams {
     created_at: string;
     updated_at: string;
   }  
+
+  export interface GetTestParams {
+    testId: string;
+    id?: string;
+  }
+
+  export interface TestDetailData {
+    test_id: string;
+    name: string;
+    description: string | null;
+    total_set: number;
+    status: TestStatus | number;
+    created_at: string;
+    updated_at: string;
+  }
+
+  export interface UpdateTestDto {
+    name?: string;
+    description?: string;
+    status?: TestStatus | number;
+  }
+
+  export interface UpdateTestParams {
+    testId: string;
+    data: UpdateTestDto;
+  }
+
+  export interface UpdateTestResponse{
+    message: string;
+  }
+
+export interface ToggleTestStatusParams {
+  testId: string,
+}
+
+export interface ToggleTestStatusResponse {
+    message: string;
+  }
+
+ export interface DeleteTestParams{
+    testId: string,
+ } 
+
+ export interface DeleteTestResponse {
+    message: string;
+  }
