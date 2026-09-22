@@ -20,3 +20,29 @@ export interface CreateTestResponse {
     created_at: string;
     updated_at?: string;
 }
+
+export interface GetTestCountQueryParams {
+    id?: string;
+    status?: TestStatus | number;
+  }
+
+export interface TestCountData {
+    count: number;
+}
+
+export interface GetTestListQueryParams {
+    id?: string;
+    status?: TestStatus | number;
+    offset?: number;
+    limit?: number;
+}
+
+  export interface TestListItem {
+    test_id: string;
+    name: string;
+    description: string | null;
+    total_set: number;
+    status: TestStatus | number;
+    created_at: string;
+    updated_at: string;
+  }  
