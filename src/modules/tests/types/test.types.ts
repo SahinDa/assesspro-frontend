@@ -78,7 +78,7 @@ export interface GetTestListQueryParams {
   }
 
 export interface ToggleTestStatusParams {
-  testId: string,
+  testId: string;
 }
 
 export interface ToggleTestStatusResponse {
@@ -86,7 +86,7 @@ export interface ToggleTestStatusResponse {
   }
 
  export interface DeleteTestParams{
-    testId: string,
+    testId: string;
  } 
 
  export interface DeleteTestResponse {
