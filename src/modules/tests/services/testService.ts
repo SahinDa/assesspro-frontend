@@ -25,10 +25,10 @@ export const testService = {
       const res = await apiClient.post<ApiResponse<CreateTestResponse>>(TEST_ENDPOINTS.CREATE,payload);
       return res.data;
     },
-  updateTest: async ({testId,data}: UpdateTestParams): Promise<ApiResponse<UpdateTestResponse>> => {
+  updateTest: async ({testId,payload}: UpdateTestParams): Promise<ApiResponse<UpdateTestResponse>> => {
     const res = await apiClient.patch<ApiResponse<UpdateTestResponse>>(
       TEST_ENDPOINTS.UPDATE(testId),
-      data
+      payload
       );
     return res.data;
   },
