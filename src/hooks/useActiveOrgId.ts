@@ -20,7 +20,6 @@ export function useActiveOrgId(adminSelectedOrgId?: string): ActiveOrgContext {
 
   // Extract the identifier from activeOrganization
   const activeOrgId = UserRole.ORGANIZATION === role ? user?.org_id :user?.active_org_id;
- console.log(JSON.stringify(user))
   let resolvedOrgId: string | undefined;
 
   switch (role) {

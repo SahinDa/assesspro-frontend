@@ -52,10 +52,14 @@ export default function TestsView({
 }: TestsViewProps) {
   // Tenant & auth context
   const { orgId, canManageTests, isAdmin: isTenantAdmin } = useActiveOrgId(propOrgId)
-  
+
+const PAGE_SIZE = 12 // or whatever items per page you want
+const [currentPage, setCurrentPage] = useState(1)
+const offset = (currentPage - 1) * PAGE_SIZE
   // Queries
-  const { data: rawTests = [], isLoading } = useTestList({ offset: 0, limit: 50 }, orgId)
+  const { data: rawTests = [], isLoading } = useTestList({ offset, limit:PAGE_SIZE }, orgId)
   const { data: totalCount = 0 } = useTestCount(undefined, orgId)
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
   // Mutations
   const { createTest, updateTest, deleteTest } = useTestMutations()
@@ -122,6 +126,7 @@ export default function TestsView({
     try {
       await deleteTest.mutateAsync({ testId: id })
       setDeletingTest(null)
+      if (tests.length === 1 && currentPage > 1) setCurrentPage((p) => p - 1)
     } catch (error) {
       console.error('Failed to delete test:', error)
     }
@@ -278,9 +283,36 @@ export default function TestsView({
               </CardContent>
             </Card>
           ))}
-        </div>
+        </div> 
       )}
-
+{totalPages > 1 && (
+          <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+            <p className="text-xs text-slate-500">
+              Page <span className="font-semibold text-slate-700">{currentPage}</span> of{' '}
+              <span className="font-semibold text-slate-700">{totalPages}</span>
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+                className="h-8 px-3 text-xs"
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+                className="h-8 px-3 text-xs"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       {/* Organization Author Modals */}
       {isOrgAuthor && (
         <>
