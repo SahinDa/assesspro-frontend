@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { testService } from '../services/testService';
 import { testKeys } from './testKeys';
 import { useActiveOrgId } from '@/hooks/useActiveOrgId';
+import { toast } from 'sonner';
 import type {
   CreateTestPayload,
   UpdateTestParams,
@@ -20,6 +21,12 @@ export function useTestMutations() {
     }
   };
 
+  // Helper to extract clean server error messages
+  const showError = (error: any, fallback: string) => {
+    const msg = error?.response?.data?.message || error?.message || fallback;
+    toast.error(Array.isArray(msg) ? msg[0] : msg);
+  };
+
   // Create Test
   const createTest = useMutation({
     mutationFn: (payload: CreateTestPayload) => {
@@ -27,8 +34,12 @@ export function useTestMutations() {
       return testService.createTest(payload);
     },
     onSuccess: () => {
+      toast.success('Test created successfully');
       queryClient.invalidateQueries({ queryKey: testKeys.lists(orgId) });
       queryClient.invalidateQueries({ queryKey: testKeys.counts(orgId) });
+    },
+    onError: (error) => {
+      showError(error, 'Failed to create test');
     },
   });
 
@@ -39,8 +50,12 @@ export function useTestMutations() {
       return testService.updateTest(params);
     },
     onSuccess: (_, variables) => {
+      toast.success('Test updated successfully');
       queryClient.invalidateQueries({ queryKey: testKeys.detail(orgId, variables.testId) });
       queryClient.invalidateQueries({ queryKey: testKeys.lists(orgId) });
+    },
+    onError: (error) => {
+      showError(error, 'Failed to update test');
     },
   });
 
@@ -51,8 +66,12 @@ export function useTestMutations() {
       return testService.toggleTestStatus(params);
     },
     onSuccess: (_, variables) => {
+      toast.success( 'Test status updated successfully');
       queryClient.invalidateQueries({ queryKey: testKeys.detail(orgId, variables.testId) });
       queryClient.invalidateQueries({ queryKey: testKeys.lists(orgId) });
+    },
+    onError: (error) => {
+      showError(error, 'Failed to update test status');
     },
   });
 
@@ -63,8 +82,12 @@ export function useTestMutations() {
       return testService.deleteTest(params);
     },
     onSuccess: () => {
+      toast.success('Test deleted successfully');
       queryClient.invalidateQueries({ queryKey: testKeys.lists(orgId) });
       queryClient.invalidateQueries({ queryKey: testKeys.counts(orgId) });
+    },
+    onError: (error) => {
+      showError(error, 'Failed to delete test');
     },
   });
 

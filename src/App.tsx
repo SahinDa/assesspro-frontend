@@ -3,6 +3,7 @@ import AppRoutes from '@/routes/AppRoutes'
 import { useAuthInit } from '@/modules/auth/hooks/useAuthInit'
 import { useAuthStore } from '@/stores/authStore';
 import { AppLoader } from '@/common/components/AppLoader';
+import { Toaster } from 'sonner'
 import './App.css'
 
 export default function App() {
@@ -17,6 +18,13 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppRoutes />
+      <Toaster 
+        position="top-right" 
+        richColors 
+        toastOptions={{
+          style: { zIndex: 99999 },
+        }}
+      />
     </BrowserRouter>
   )
 }
