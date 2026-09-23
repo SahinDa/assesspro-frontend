@@ -184,3 +184,14 @@ export enum TestStatus {
   ACTIVE = 1,
   DELETED = 2,
 }
+
+export enum TestSetStatus {
+  ON_HOLD = 0,
+  ACTIVE = 1,
+  DELETED = 2,
+}
+
+export enum QuestionSource {
+  MANUAL = 1,
+  PDF = 2,
+}
