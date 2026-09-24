@@ -92,3 +92,10 @@ export interface ToggleTestStatusResponse {
  export interface DeleteTestResponse {
     message: string;
   }
+
+
+  export interface GetTestSetCountPerTestQueryParams {
+    orgId?: string;
+  }
+
+  export type GetTestSetCountPerTestResponse = Record<string, number>;
