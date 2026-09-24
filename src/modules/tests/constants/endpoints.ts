@@ -14,12 +14,12 @@ export const TEST_ENDPOINTS = {
   // Test-Set Level Endpoints
   // Base controller prefix: /tests
   // ===============================
-  CREATE_SET: (testId: string) => `/tests/testset/${testId}`,
-  LIST_SETS: (testId: string) => `/tests/${testId}/testset/list`,
-  COUNT_SETS: (testId: string) => `/tests/${testId}/testset/count`,
-  GET_SET_BY_ID: (testId: string, testSetId: string) => `/tests/${testId}/testset/${testSetId}`,
-  UPDATE_SET: (testId: string, testSetId: string) => `/tests/${testId}/testset/${testSetId}`,
-  TOGGLE_SET_STATUS: (testId: string, testSetId: string) => `/tests/${testId}/testset/${testSetId}/toggle-status`,
-  DELETE_SET: (testId: string, testSetId: string) => `/tests/${testId}/testset/${testSetId}`,
-  SETS_PER_TEST: '/tests/sets-per-test',
+  CREATE_TESTSET: (testId: string) => `/tests/testset/${testId}`,
+  LIST_TESTSETS: (testId: string) => `/tests/${testId}/testset/list`,
+  COUNT_TESTSETS: (testId: string) => `/tests/${testId}/testset/count`,
+  GET_TESTSET_BY_ID: (testId: string, testSetId: string) => `/tests/${testId}/testset/${testSetId}`,
+  UPDATE_TESTSET: (testId: string, testSetId: string) => `/tests/${testId}/testset/${testSetId}`,
+  TOGGLE_TESTSET_STATUS: (testId: string, testSetId: string) => `/tests/${testId}/testset/${testSetId}/toggle-status`,
+  DELETE_TESTSET: (testId: string, testSetId: string) => `/tests/${testId}/testset/${testSetId}`,
+  TESTSETS_PER_TEST: '/tests/sets-per-test',
 } as const;

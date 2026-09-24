@@ -16,6 +16,8 @@ import type{
   ToggleTestStatusResponse,
   DeleteTestParams,
   DeleteTestResponse,
+  GetTestSetCountPerTestQueryParams,
+  GetTestSetCountPerTestResponse,
 
  } from '../types/test.types';
  import type { ApiResponse } from '@/types/api.types';
@@ -63,6 +65,13 @@ export const testService = {
   testCount:async (payload:GetTestCountQueryParams): Promise<ApiResponse<TestCountData>> => {
     const res = await apiClient.get<ApiResponse<TestCountData>>(
       TEST_ENDPOINTS.COUNT,
+      {params:payload},
+      );
+    return res.data;
+  },
+  getTestSetPerTest: async (payload?:GetTestSetCountPerTestQueryParams): Promise<ApiResponse<GetTestSetCountPerTestResponse>> => {
+    const res = await apiClient.get<ApiResponse<GetTestSetCountPerTestResponse>>(
+      TEST_ENDPOINTS.TESTSETS_PER_TEST,
       {params:payload},
       );
     return res.data;
