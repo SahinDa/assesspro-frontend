@@ -77,9 +77,9 @@ export default function TestsView({
 
   const activeStatusFilter: TestStatus | undefined = useMemo(() => {
     if (isStudent || selectedStatus === 'ACTIVE') return TestStatus.ACTIVE
-  if (selectedStatus === 'ON_HOLD') return TestStatus.ON_HOLD
-  if (selectedStatus === 'DELETED') return TestStatus.DELETED
-  return undefined // 'ALL'
+    if (selectedStatus === 'ON_HOLD') return TestStatus.ON_HOLD
+    if (selectedStatus === 'DELETED') return TestStatus.DELETED
+    return undefined // 'ALL'
   }, [isStudent, selectedStatus])
 
   // Queries
