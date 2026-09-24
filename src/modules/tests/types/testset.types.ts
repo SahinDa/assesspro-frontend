@@ -154,9 +154,3 @@ import {
     success?: boolean;
     message?: string;
   }
-
-  export interface GetTestSetCountPerTestQueryParams {
-    orgId?: string;
-  }
-
-  export type GetTestSetCountPerTestResponse = Record<string, number>;
