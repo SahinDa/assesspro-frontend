@@ -36,7 +36,7 @@ export const testService = {
     testId,
   }: ToggleTestStatusParams): Promise<ApiResponse<ToggleTestStatusResponse>> => {
     const res = await apiClient.patch<ApiResponse<ToggleTestStatusResponse>>(
-      TEST_ENDPOINTS.TOGGLE_STATUS(testId),
+      TEST_ENDPOINTS.TOGGLETESTSTATUS(testId),
     );
     return res.data;
   },

@@ -8,6 +8,7 @@ export const TEST_ENDPOINTS = {
   GET_BY_ID: (testId: string) => `/tests/${testId}`,
   UPDATE: (testId: string) => `/tests/${testId}`,
   DELETE: (testId: string) => `/tests/${testId}`,
+  TOGGLETESTSTATUS:(testId:string) =>`/tests/${testId}/toggle-status`,
 
   // ===============================
   // Test-Set Level Endpoints
