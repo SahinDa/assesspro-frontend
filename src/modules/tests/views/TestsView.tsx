@@ -84,7 +84,7 @@ export default function TestsView({
 
   // Queries
   const { data: rawTests = [], isLoading } = useTestList({ offset, limit: PAGE_SIZE, status: activeStatusFilter }, orgId)
-  const { data: totalCount = 0 } = useTestCount(activeStatusFilter, orgId)
+  const { data: totalCount = 0 } = useTestCount({ status: activeStatusFilter, id: orgId })
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
   // Mutations
