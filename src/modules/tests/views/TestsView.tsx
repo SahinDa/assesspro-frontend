@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   BookOpen,
   MoreHorizontal,
@@ -8,8 +8,17 @@ import {
   ArrowRight,
   Plus,
   FolderPlus,
-  ShieldAlert
+  ShieldAlert,
+  Filter,
+  Power,
 } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -24,7 +33,7 @@ import TestFormModal from '../components/TestFormModal'
 import DeleteTestDialog from '../components/DeleteTestDialog'
 import TestSetsView from './TestSetsView'
 import type { TestFormData } from '../utils/testValidation'
-import { UserRole, type UserRoleType } from '@/config/enums'
+import { UserRole, type UserRoleType, TestStatus } from '@/config/enums'
 import type { TestListItem } from '../types/test.types'
 import { useTestList, useTestCount } from '../api/useTestQueries'
 import { useTestMutations } from '../api/useTestMutations'
@@ -35,6 +44,7 @@ export interface TestItem {
   name: string
   description: string
   setsCount: number
+  status: TestStatus
 }
 
 export interface TestsViewProps {
@@ -50,19 +60,35 @@ export default function TestsView({
   orgId: propOrgId,
   onStartTestSet,
 }: TestsViewProps) {
-  // Tenant & auth context
+
   const { orgId, canManageTests, isAdmin: isTenantAdmin } = useActiveOrgId(propOrgId)
+
+
+  const isStudent = userRole === UserRole.STUDENT
+  const isAdmin = userRole === UserRole.ADMIN || isTenantAdmin || readOnly
+  const isOrgAuthor = canManageTests && !readOnly
 
   const PAGE_SIZE = 12 // or whatever items per page you want
   const [currentPage, setCurrentPage] = useState(1)
   const offset = (currentPage - 1) * PAGE_SIZE
+  const [selectedStatus, setSelectedStatus] = useState<string>(
+    isStudent ? String(TestStatus.ACTIVE) : 'ALL'
+  )
+
+  const activeStatusFilter: TestStatus | undefined = useMemo(() => {
+    if (isStudent || selectedStatus === 'ACTIVE') return TestStatus.ACTIVE
+  if (selectedStatus === 'ON_HOLD') return TestStatus.ON_HOLD
+  if (selectedStatus === 'DELETED') return TestStatus.DELETED
+  return undefined // 'ALL'
+  }, [isStudent, selectedStatus])
+
   // Queries
-  const { data: rawTests = [], isLoading } = useTestList({ offset, limit: PAGE_SIZE }, orgId)
-  const { data: totalCount = 0 } = useTestCount(undefined, orgId)
+  const { data: rawTests = [], isLoading } = useTestList({ offset, limit: PAGE_SIZE, status: activeStatusFilter }, orgId)
+  const { data: totalCount = 0 } = useTestCount(activeStatusFilter, orgId)
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
   // Mutations
-  const { createTest, updateTest, deleteTest } = useTestMutations()
+  const { createTest, updateTest, deleteTest, toggleStatus } = useTestMutations()
 
   // Map server items to component's existing TestItem structure so zero UI code changes
   const tests: TestItem[] = rawTests.map((t) => ({
@@ -70,11 +96,9 @@ export default function TestsView({
     name: t.name,
     description: t.description || '',
     setsCount: t.total_set ?? 0,
+    status: t.status,
   }))
 
-  const isStudent = userRole === UserRole.STUDENT
-  const isAdmin = userRole === UserRole.ADMIN || isTenantAdmin || readOnly
-  const isOrgAuthor = canManageTests && !readOnly
 
   const [selectedTest, setSelectedTest] = useState<TestItem | null>(null)
   const [modalState, setModalState] = useState<{
@@ -85,6 +109,12 @@ export default function TestsView({
     test: null,
   })
   const [deletingTest, setDeletingTest] = useState<TestItem | null>(null)
+
+
+  // Reset page when filter changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [orgId, selectedStatus])
 
   // 1. If a test is selected, render Test Sets View
   if (selectedTest) {
@@ -119,6 +149,16 @@ export default function TestsView({
       setModalState({ isOpen: false, test: null })
     } catch (error) {
       console.error('Failed to save test:', error)
+    }
+  }
+
+  const handleToggleStatus = async (test: TestItem) => {
+    try {
+      await toggleStatus.mutateAsync({
+        testId: test.id,
+      })
+    } catch (error) {
+      console.error('Failed to toggle test status:', error)
     }
   }
 
@@ -158,16 +198,36 @@ export default function TestsView({
                 : 'Create, organize, and manage your tests and underlying test sets.'}
           </p>
         </div>
-
-        {/* Create Test: ONLY Organization Authors, never Admin or Student */}
-        {isOrgAuthor && tests.length > 0 && (
-          <Button
-            onClick={() => setModalState({ isOpen: true, test: null })}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl h-10 px-4 gap-2 shadow-xs cursor-pointer shrink-0"
-          >
-            <Plus className="h-4 w-4" /> Create Test
-          </Button>
-        )}
+        <div className="flex items-center gap-2.5 shrink-0">
+          {/* 1. Status Filter dropdown (Hidden for students) */}
+          {!isStudent && (
+            <div className="flex items-center gap-1.5">
+              <Filter className="h-3.5 w-3.5 text-slate-400" />
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="h-9 w-[130px] rounded-xl text-xs bg-white border-slate-200">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl text-xs z-30">
+                  <SelectItem value="ALL">All</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="ON_HOLD">On Hold</SelectItem>
+                  {isAdmin && (
+                    <SelectItem value="DELETED">Deleted</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {/* Create Test: ONLY Organization Authors, never Admin or Student */}
+          {isOrgAuthor && tests.length > 0 && (
+            <Button
+              onClick={() => setModalState({ isOpen: true, test: null })}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl h-10 px-4 gap-2 shadow-xs cursor-pointer shrink-0"
+            >
+              <Plus className="h-4 w-4" /> Create Test
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Grid vs Empty State */}
@@ -235,6 +295,13 @@ export default function TestsView({
                             <MoreHorizontal className="h-4 w-4" />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-36 rounded-xl p-1 shadow-lg border-slate-200 bg-white z-30">
+                            <DropdownMenuItem
+                              onClick={() => handleToggleStatus(test)}
+                              className="text-xs font-medium gap-2 rounded-lg cursor-pointer py-2 text-slate-700 hover:bg-slate-50"
+                            >
+                              <Power className={`h-3.5 w-3.5 ${test.status === TestStatus.ACTIVE ? 'text-amber-500' : 'text-emerald-500'}`} />
+                              <span>{test.status === TestStatus.ACTIVE ? 'Put On Hold' : 'Activate'}</span>
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => setModalState({ isOpen: true, test })}
                               className="text-xs font-medium gap-2 rounded-lg cursor-pointer py-2 text-slate-700 hover:bg-slate-50"
