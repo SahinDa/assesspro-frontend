@@ -61,3 +61,102 @@ import {
     updated_at: string | null;
     questions: QuestionResponse[];
   }
+
+  export interface GetTestSetCountQueryParams {
+    testId: string;
+    orgId?: string;
+    status?: TestStatus | number;
+  }
+
+  export interface TestSetCountData {
+    count: number;
+  }
+
+  export interface GetTestSetListQueryParams {
+    testId: string;
+    offset?: number;
+    limit?: number;
+    orgId?: string;
+    status?: TestStatus | number;
+  } 
+
+  export interface TestSetListItem {
+    set_id: string;
+    test_id: string;
+    name: string;
+    description: string | null;
+    set_number: number;
+    total_questions: number;
+    timer_minutes: number;
+    positive_marking_value: number;
+    is_negative_marking: boolean;
+    negative_score_value: number;
+    status: TestStatus;
+    created_at: string;
+    updated_at: string;
+  }
+
+  export interface GetTestSetQueryParams {
+    testId: string;
+    testSetId: string;
+    orgId?: string;
+  }
+
+  export interface UpdateTestSetInput {
+    name?: string;
+    description?: string;
+    total_questions?: number;
+    timer_minutes?: number;
+    positive_marking_value?: number;
+    is_negative_marking?: boolean;
+    negative_score_value?: NegativeMarkingOption;
+    questions?: CreateQuestionNestedPayload[];
+  }
+  
+  export interface UpdateTestSetParams {
+    testId: string;
+    testSetId: string;
+    payload: UpdateTestSetInput;
+  }
+
+  export interface UpdateTestSetResponse {
+    set_id: string;
+    test_id: string;
+    name: string;
+    description: string | null;
+    set_number: number;
+    total_questions: number;
+    timer_minutes: number;
+    positive_marking_value: number;
+    is_negative_marking: boolean;
+    negative_score_value: NegativeMarkingOption;
+    status: TestSetStatus;
+    created_at: string;
+    updated_at: string;
+    questions: QuestionResponse[];
+  }
+
+  export interface ToggleTestSetStatusParams {
+    testId: string;
+    testSetId: string;
+  }
+
+  export interface ToggleTestSetStatusResponse {
+    message?: string;
+  }
+
+  export interface DeleteTestSetParams {
+    testId: string;
+    testSetId: string;
+  }
+  
+  export interface DeleteTestSetResponse {
+    success?: boolean;
+    message?: string;
+  }
+
+  export interface GetTestSetCountPerTestQueryParams {
+    orgId?: string;
+  }
+
+  export type GetTestSetCountPerTestResponse = Record<string, number>;
