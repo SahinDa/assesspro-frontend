@@ -3,7 +3,7 @@ import { testSetService } from '../services/testsetService';
 import { testSetKeys } from './testSetKeys';
 import { useActiveOrgId } from '@/hooks/useActiveOrgId';
 import { toast } from 'sonner';
-import {
+import type {
     CreateTestSetParams,
     UpdateTestSetParams,
     DeleteTestSetParams,
