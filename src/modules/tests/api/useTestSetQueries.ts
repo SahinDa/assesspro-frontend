@@ -22,8 +22,7 @@ export function useTestSetList(
   return useQuery({
     queryKey: testSetKeys.list(orgId, testId, params),
     queryFn: () =>
-      testSetService.getTestSets({
-        orgId: orgId!,
+      testSetService.testSetList({
         testId: testId!,
         ...params,
       }),
@@ -46,8 +45,7 @@ export function useTestSetCount(
   return useQuery({
     queryKey: testSetKeys.counts(orgId, testId),
     queryFn: () =>
-      testSetService.getTestSetCount({
-        orgId: orgId!,
+      testSetService.testSetCount({
         testId: testId!,
         ...params,
       }),
@@ -65,12 +63,10 @@ export function useTestSetDetail(
   adminOrgId?: string,
 ) {
   const { orgId } = useActiveOrgId(adminOrgId);
-
   return useQuery({
     queryKey: testSetKeys.detail(orgId, testId, testSetId),
     queryFn: () =>
       testSetService.getTestSet({
-        orgId: orgId!,
         testId: testId!,
         testSetId: testSetId!,
       }),
