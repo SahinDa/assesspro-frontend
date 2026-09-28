@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useParams } from 'react-router-dom'
 import {
   ArrowLeft,
   Clock,
@@ -11,6 +12,7 @@ import {
   FolderPlus,
   Play,
   Eye,
+  Loader2,
 } from 'lucide-react'
 import TestRunnerView from './TestRunnerView'
 import { Card, CardContent } from '@/components/ui/card'
@@ -26,42 +28,10 @@ import {
 import TestSetFormModal, { type TestSetItem } from '../components/TestSetFormModal'
 import DeleteTestSetDialog from '../components/DeleteTestSetDialog'
 import TestSetDetailsView from './TestSetDetailsView'
-import { NegativeMarkingOption, CorrectAnswer, UserRole, type UserRoleType } from '@/config/enums'
+import { UserRole, type UserRoleType } from '@/config/enums'
 import type { TestSetFormData } from '../utils/testSetValidation'
-
-const INITIAL_MOCK_SETS: TestSetItem[] = [
-  {
-    id: 'set-1',
-    name: 'Set 1 - Fundamental Algorithms',
-    description: 'Covers graph traversals, greedy approaches, and dynamic programming basics.',
-    total_questions: 15,
-    timer_minutes: 45,
-    positive_marking_value: 2,
-    is_negative_marking: true,
-    negative_score_value: NegativeMarkingOption.QUARTER,
-    questions: [
-      {
-        question_text: "What is the time complexity of Dijkstra's algorithm with a binary min-heap?",
-        option_a: 'O(V^2)',
-        option_b: 'O((V + E) log V)',
-        option_c: 'O(E log V)',
-        option_d: 'O(V log E)',
-        correct_answer: CorrectAnswer.B,
-      },
-    ],
-  },
-  {
-    id: 'set-2',
-    name: 'Set 2 - Advanced Data Structures',
-    description: 'Segment trees, Fenwick trees, Disjoint Set Union, and Trie problem sets.',
-    total_questions: 20,
-    timer_minutes: 60,
-    positive_marking_value: 2,
-    is_negative_marking: true,
-    negative_score_value: NegativeMarkingOption.HALF,
-    questions: [],
-  },
-]
+import { useTestSetList, useTestSetCount } from '../api/useTestSetQueries'
+import { useTestSetMutations } from '../api/useTestSetMutations'
 
 interface TestSetsViewProps {
   testId?: string
@@ -73,24 +43,44 @@ interface TestSetsViewProps {
 }
 
 export default function TestSetsView({
-  testId = 'test-1',
-  testName = 'Algorithms & Data Structures',
+  testId: propTestId,
+  testName: propTestName,
   userRole = UserRole.ORGANIZATION,
   readOnly = false,
   onBack,
   onTakeTestSet,
 }: TestSetsViewProps) {
-  const [testSets, setTestSets] = useState<TestSetItem[]>(INITIAL_MOCK_SETS)
+  // Resolve testId from props or URL route parameters
+  const { testId: routeTestId } = useParams<{ testId: string }>()
+  const resolvedTestId = propTestId || routeTestId
+  const displayName = propTestName || 'Test Details'
+
+  // Server queries
+  const { 
+    data: testSets = [], 
+    isLoading, 
+    isError, 
+    error 
+  } = useTestSetList(resolvedTestId)
+
+  const { data: totalCount = 0 } = useTestSetCount(resolvedTestId)
+
+  // Server mutations
+  const { 
+    createTestSet, 
+    updateTestSet, 
+    deleteTestSet 
+  } = useTestSetMutations()
 
   const isStudent = userRole === UserRole.STUDENT
   const isAdmin = userRole === UserRole.ADMIN || readOnly
   const isOrgAuthor = userRole === UserRole.ORGANIZATION && !readOnly
 
-  // State to track which set is being inspected in Details View
+  // State to track which set is being inspected in Details View or Test Runner
   const [selectedSetForDetails, setSelectedSetForDetails] = useState<TestSetItem | null>(null)
   const [activeRunningSet, setActiveRunningSet] = useState<TestSetItem | null>(null)
 
-  // Organization-only modal states
+  // Organization-only modal & dialog states
   const [modalState, setModalState] = useState<{
     isOpen: boolean
     testSet: TestSetItem | null
@@ -101,35 +91,71 @@ export default function TestSetsView({
 
   const [deletingSet, setDeletingSet] = useState<TestSetItem | null>(null)
 
+  // Handle Create and Update operations
   const handleSaveTestSet = (data: TestSetFormData, id?: string) => {
+    if (!resolvedTestId) return
+
     if (id) {
-      setTestSets((prev) =>
-        prev.map((set) => {
-          if (set.id === id) {
-            const updated = { ...set, ...data }
-            if (selectedSetForDetails?.id === id) {
-              setSelectedSetForDetails(updated)
-            }
-            return updated
-          }
-          return set
-        })
+      updateTestSet.mutate(
+        {
+          testId: resolvedTestId,
+          testSetId: id,
+          payload: data,
+        },
+        {
+          onSuccess: () => {
+            setModalState({ isOpen: false, testSet: null })
+          },
+        }
       )
     } else {
-      const newSet: TestSetItem = {
-        ...data,
-        id: `set-${Date.now()}`,
-      }
-      setTestSets((prev) => [newSet, ...prev])
+      createTestSet.mutate(
+        {
+          testId: resolvedTestId,
+          payload: data,
+        },
+        {
+          onSuccess: () => {
+            setModalState({ isOpen: false, testSet: null })
+          },
+        }
+      )
     }
   }
 
+  // Handle Delete operation
   const handleConfirmDelete = (id: string) => {
-    setTestSets((prev) => prev.filter((s) => s.id !== id))
-    setDeletingSet(null)
-    if (selectedSetForDetails?.id === id) {
-      setSelectedSetForDetails(null)
-    }
+    if (!resolvedTestId) return
+
+    deleteTestSet.mutate(
+      {
+        testId: resolvedTestId,
+        testSetId: id,
+      },
+      {
+        onSuccess: () => {
+          setDeletingSet(null)
+          if (selectedSetForDetails?.id === id) {
+            setSelectedSetForDetails(null)
+          }
+        },
+      }
+    )
+  }
+
+  // GUARD: Missing testId
+  if (!resolvedTestId) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3 text-center p-4">
+        <p className="text-sm font-semibold text-slate-800">No Test Selected</p>
+        <p className="text-xs text-slate-500">Please select a valid test to inspect its test sets.</p>
+        {onBack && (
+          <Button variant="outline" size="sm" onClick={onBack} className="mt-2 text-xs">
+            Go Back
+          </Button>
+        )}
+      </div>
+    )
   }
 
   // STUDENT ONLY: Launch Active Test Runner
@@ -137,7 +163,7 @@ export default function TestSetsView({
     return (
       <TestRunnerView
         testSetId={activeRunningSet.id}
-        testName={testName}
+        testName={displayName}
         setName={activeRunningSet.name}
         timerMinutes={activeRunningSet.timer_minutes}
         positiveMarks={activeRunningSet.positive_marking_value}
@@ -153,10 +179,13 @@ export default function TestSetsView({
   if (!isStudent && selectedSetForDetails) {
     return (
       <>
+     {console.log('Selected set clicked:', selectedSetForDetails)}
         <TestSetDetailsView
-          testSet={selectedSetForDetails}
-          testName={testName}
-          readOnly= {!isOrgAuthor}
+          testId={resolvedTestId}
+          testSetId={selectedSetForDetails.set_id}
+          initialTestSet={selectedSetForDetails}
+          testName={displayName}
+          readOnly={!isOrgAuthor}
           onBack={() => setSelectedSetForDetails(null)}
           onEdit={() => {
             if (!isAdmin) {
@@ -164,20 +193,41 @@ export default function TestSetsView({
             }
           }}
           onPreview={() => {
-            onTakeTestSet?.(selectedSetForDetails.id)
+            onTakeTestSet?.(selectedSetForDetails.set_id)
           }}
         />
 
-        {/* Organization Edit Modal - Rendered ONLY if not in readOnly/Admin mode */}
+        {/* Organization Edit Modal */}
         {isOrgAuthor && (
           <TestSetFormModal
             isOpen={modalState.isOpen}
             testSet={modalState.testSet}
             onClose={() => setModalState({ isOpen: false, testSet: null })}
             onSubmit={handleSaveTestSet}
+            isSubmitting={createTestSet.isPending || updateTestSet.isPending}
           />
         )}
       </>
+    )
+  }
+
+  // Loading State
+  if (isLoading) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+        <p className="text-xs text-slate-500 font-medium">Loading test sets...</p>
+      </div>
+    )
+  }
+
+  // Error State
+  if (isError) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center gap-2 text-center">
+        <p className="text-sm font-semibold text-rose-600">Failed to load test sets</p>
+        <p className="text-xs text-slate-500">{(error as any)?.message || 'Please try again later'}</p>
+      </div>
     )
   }
 
@@ -199,12 +249,12 @@ export default function TestSetsView({
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">{testName}</h2>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">{displayName}</h2>
             <Badge
               variant="secondary"
               className="text-[11px] font-semibold bg-indigo-50 text-indigo-700 rounded-lg px-2 border border-indigo-100"
             >
-              {testSets.length} {testSets.length === 1 ? 'Set' : 'Sets'}
+              {totalCount} {totalCount === 1 ? 'Set' : 'Sets'}
             </Badge>
             {isAdmin && (
               <Badge variant="outline" className="text-[10px] font-bold bg-amber-50 text-amber-800 border-amber-200">
@@ -221,7 +271,7 @@ export default function TestSetsView({
           </p>
         </div>
 
-        {/* Create Test Set: ONLY Organization Authors */}
+        {/* Create Test Set Button: ONLY Organization Authors */}
         {isOrgAuthor && testSets.length > 0 && (
           <Button
             type="button"
@@ -267,13 +317,13 @@ export default function TestSetsView({
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {testSets.map((set) => (
+          {testSets.map((set,index) => (
             <Card
-              key={set.id}
+              key={set.set_id || (set as any)._id || `set-${index}` }
               onClick={() => {
                 if (isStudent) {
                   setActiveRunningSet(set)
-                  onTakeTestSet?.(set.id)
+                  onTakeTestSet?.(set.set_id)
                 } else {
                   setSelectedSetForDetails(set)
                 }
@@ -316,7 +366,7 @@ export default function TestSetsView({
                     )}
                   </div>
 
-                  {/* 3-Dot Menu: ONLY for Organization Authors, hidden in read-only and student */}
+                  {/* 3-Dot Menu: ONLY for Organization Authors */}
                   {isOrgAuthor && (
                     <div onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
@@ -407,6 +457,7 @@ export default function TestSetsView({
             testSet={modalState.testSet}
             onClose={() => setModalState({ isOpen: false, testSet: null })}
             onSubmit={handleSaveTestSet}
+            isSubmitting={createTestSet.isPending || updateTestSet.isPending}
           />
 
           <DeleteTestSetDialog
@@ -414,6 +465,7 @@ export default function TestSetsView({
             testSet={deletingSet}
             onClose={() => setDeletingSet(null)}
             onConfirm={handleConfirmDelete}
+            isDeleting={deleteTestSet.isPending}
           />
         </>
       )}
