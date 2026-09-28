@@ -7,17 +7,21 @@ import {
   Eye,
   FileQuestion,
   Plus,
+  Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import type { TestSetItem } from '../components/TestSetFormModal'
 import { CorrectAnswer } from '@/config/enums'
+import { useTestSetDetail } from '../api/useTestSetQueries'
 
 interface TestSetDetailsViewProps {
-  testSet: TestSetItem
+  testId: string
+  testSetId: string
+  initialTestSet?: TestSetItem | null
   testName?: string
-  readOnly?:boolean
+  readOnly?: boolean
   onBack: () => void
   onEdit: () => void
   onPreview?: () => void
@@ -31,14 +35,44 @@ const ENUM_TO_LETTER: Record<number, string> = {
 }
 
 export default function TestSetDetailsView({
-  testSet,
+  testId,
+  testSetId,
+  initialTestSet,
   testName = 'Test Series',
   readOnly = false,
   onBack,
   onEdit,
   onPreview,
 }: TestSetDetailsViewProps) {
+  // Fetch full set details (including questions) from the server
+  const { data: detailData, isLoading, isError } = useTestSetDetail(testId, testSetId)
+
+  // Use the fetched full data when ready, falling back to initial shallow data
+  const testSet = (detailData || initialTestSet) as TestSetItem | undefined
   const questions = testSet?.questions || []
+
+  // Full-page loader only if no initial placeholder data is available
+  if (isLoading && !testSet) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+        <p className="text-xs text-slate-500 font-medium">Loading test set questions...</p>
+      </div>
+    )
+  }
+
+  // Error boundary fallback
+  if (isError && !testSet) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center gap-2 text-center p-4">
+        <p className="text-sm font-semibold text-rose-600">Failed to load test set details</p>
+        <p className="text-xs text-slate-500">Could not retrieve questions for this test set.</p>
+        <Button variant="outline" size="sm" onClick={onBack} className="mt-2 text-xs">
+          Go Back
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -82,15 +116,16 @@ export default function TestSetDetailsView({
               <span>Preview Mode</span>
             </Button>
           )}
-          {!readOnly && (  <Button
-            type="button"
-            size="sm"
-            onClick={onEdit}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold h-9 px-3 gap-1.5 shadow-xs cursor-pointer"
-          >
-            <Edit3 className="h-3.5 w-3.5" />
-            <span>Edit Set & Questions</span>
-          </Button>
+          {!readOnly && (
+            <Button
+              type="button"
+              size="sm"
+              onClick={onEdit}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold h-9 px-3 gap-1.5 shadow-xs cursor-pointer"
+            >
+              <Edit3 className="h-3.5 w-3.5" />
+              <span>Edit Set & Questions</span>
+            </Button>
           )}
         </div>
       </div>
@@ -158,9 +193,15 @@ export default function TestSetDetailsView({
               {questions.length} / {testSet?.total_questions ?? questions.length} Ready
             </Badge>
           </div>
+          {isLoading && (
+            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-600" />
+              <span>Refreshing questions...</span>
+            </div>
+          )}
         </div>
 
-        {questions.length === 0 ? (
+        {questions.length === 0 && !isLoading ? (
           <div className="text-center py-12 rounded-2xl border border-dashed border-slate-200 bg-white space-y-3">
             <div className="h-12 w-12 mx-auto rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
               <FileQuestion className="h-6 w-6" />
@@ -171,15 +212,17 @@ export default function TestSetDetailsView({
                 Add question statements and options to activate this test set.
               </p>
             </div>
-            <Button
-              type="button"
-              onClick={onEdit}
-              size="sm"
-              className="rounded-xl text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-semibold h-8 px-3 gap-1.5 cursor-pointer"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span>Add Questions</span>
-            </Button>
+            {!readOnly && (
+              <Button
+                type="button"
+                onClick={onEdit}
+                size="sm"
+                className="rounded-xl text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-semibold h-8 px-3 gap-1.5 cursor-pointer"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Add Questions</span>
+              </Button>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
@@ -187,7 +230,7 @@ export default function TestSetDetailsView({
               const letter = ENUM_TO_LETTER[q.correct_answer] || 'A'
 
               return (
-                <Card key={idx} className="rounded-2xl border border-slate-200/80 bg-white shadow-2xs">
+                <Card key={q.id || `q-${idx}`} className="rounded-2xl border border-slate-200/80 bg-white shadow-2xs">
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-0.5">
