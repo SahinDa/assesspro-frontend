@@ -56,20 +56,20 @@ export default function TestSetsView({
   const displayName = propTestName || 'Test Details'
 
   // Server queries
-  const { 
-    data: testSets = [], 
-    isLoading, 
-    isError, 
-    error 
+  const {
+    data: testSets = [],
+    isLoading,
+    isError,
+    error
   } = useTestSetList(resolvedTestId)
 
   const { data: totalCount = 0 } = useTestSetCount(resolvedTestId)
 
   // Server mutations
-  const { 
-    createTestSet, 
-    updateTestSet, 
-    deleteTestSet 
+  const {
+    createTestSet,
+    updateTestSet,
+    deleteTestSet
   } = useTestSetMutations()
 
   const isStudent = userRole === UserRole.STUDENT
@@ -179,7 +179,7 @@ export default function TestSetsView({
   if (!isStudent && selectedSetForDetails) {
     return (
       <>
-     {console.log('Selected set clicked:', selectedSetForDetails)}
+        {console.log('Selected set clicked:', selectedSetForDetails)}
         <TestSetDetailsView
           testId={resolvedTestId}
           testSetId={selectedSetForDetails.set_id}
@@ -188,9 +188,19 @@ export default function TestSetsView({
           readOnly={!isOrgAuthor}
           showAnswers={!isStudent}
           onBack={() => setSelectedSetForDetails(null)}
-          onEdit={() => {
+          onEdit={(fullLoadedSet?: TestSetItem) => {
             if (!isAdmin) {
-              setModalState({ isOpen: true, testSet: selectedSetForDetails })
+              const activeSet = fullLoadedSet || selectedSetForDetails
+              const setId = activeSet.set_id || (activeSet as any).id
+
+              setModalState({
+                isOpen: true,
+                testSet: {
+                  ...activeSet,
+                  id: setId,
+                  set_id: setId,
+                } as TestSetItem,
+              })
             }
           }}
           onPreview={() => {
@@ -267,8 +277,8 @@ export default function TestSetsView({
             {isAdmin
               ? 'Inspect test sets and questions for moderation and compliance.'
               : isStudent
-              ? 'Review scoring rules, timer limits, and launch your test attempt.'
-              : 'Configure test sets, inspect questions, grading criteria, and countdown timers.'}
+                ? 'Review scoring rules, timer limits, and launch your test attempt.'
+                : 'Configure test sets, inspect questions, grading criteria, and countdown timers.'}
           </p>
         </div>
 
@@ -300,8 +310,8 @@ export default function TestSetsView({
                 {isAdmin
                   ? 'This test does not have any sets or questions attached.'
                   : isStudent
-                  ? 'There are currently no active question sets configured for this test module.'
-                  : 'Create a test set to configure questions, scoring, and timer rules for this assessment.'}
+                    ? 'There are currently no active question sets configured for this test module.'
+                    : 'Create a test set to configure questions, scoring, and timer rules for this assessment.'}
               </p>
             </div>
 
@@ -318,9 +328,9 @@ export default function TestSetsView({
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {testSets.map((set,index) => (
+          {testSets.map((set, index) => (
             <Card
-              key={set.set_id || (set as any)._id || `set-${index}` }
+              key={set.set_id || (set as any)._id || `set-${index}`}
               onClick={() => {
                 if (isStudent) {
                   setActiveRunningSet(set)

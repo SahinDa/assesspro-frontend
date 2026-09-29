@@ -24,7 +24,7 @@ interface TestSetDetailsViewProps {
   readOnly?: boolean
   showAnswers?: boolean
   onBack: () => void
-  onEdit: () => void
+  onEdit: (loadedSet?: TestSetItem) => void
   onPreview?: () => void
 }
 
@@ -122,7 +122,7 @@ export default function TestSetDetailsView({
             <Button
               type="button"
               size="sm"
-              onClick={onEdit}
+              onClick={() => onEdit(testSet)}
               className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold h-9 px-3 gap-1.5 shadow-xs cursor-pointer"
             >
               <Edit3 className="h-3.5 w-3.5" />
