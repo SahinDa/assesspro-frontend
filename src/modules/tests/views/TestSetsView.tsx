@@ -186,6 +186,7 @@ export default function TestSetsView({
           initialTestSet={selectedSetForDetails}
           testName={displayName}
           readOnly={!isOrgAuthor}
+          showAnswers={!isStudent}
           onBack={() => setSelectedSetForDetails(null)}
           onEdit={() => {
             if (!isAdmin) {

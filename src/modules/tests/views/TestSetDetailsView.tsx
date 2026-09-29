@@ -22,6 +22,7 @@ interface TestSetDetailsViewProps {
   initialTestSet?: TestSetItem | null
   testName?: string
   readOnly?: boolean
+  showAnswers?: boolean
   onBack: () => void
   onEdit: () => void
   onPreview?: () => void
@@ -40,6 +41,7 @@ export default function TestSetDetailsView({
   initialTestSet,
   testName = 'Test Series',
   readOnly = false,
+  showAnswers = true,
   onBack,
   onEdit,
   onPreview,
@@ -227,7 +229,7 @@ export default function TestSetDetailsView({
         ) : (
           <div className="space-y-3">
             {questions.map((q, idx) => {
-              const letter = ENUM_TO_LETTER[q.correct_answer] || 'A'
+              const letter = ENUM_TO_LETTER[q.correct_answer] || 'N/A'
 
               return (
                 <Card key={q.id || `q-${idx}`} className="rounded-2xl border border-slate-200/80 bg-white shadow-2xs">
@@ -236,12 +238,14 @@ export default function TestSetDetailsView({
                       <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-0.5">
                         Q{idx + 1}
                       </span>
+                       { showAnswers &&
                       <Badge
                         variant="outline"
                         className="text-[10px] font-medium text-emerald-700 bg-emerald-50 border-emerald-200"
                       >
                         Correct: Option {letter}
                       </Badge>
+                       }
                     </div>
 
                     <p className="text-xs font-semibold text-slate-900 leading-relaxed">
