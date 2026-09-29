@@ -133,11 +133,11 @@ export default function TestSetFormModal({
 
   const handleBulkImport = (importedQuestions: QuestionFormData[]) => {
     setFormData((prev) => {
-      const remainingSlots = Math.max(0, prev.total_questions - prev.questions.length)
-      const allowedBatch = importedQuestions.slice(0, remainingSlots)
+      const updatedQuestions = [...prev.questions, ...importedQuestions]
       return {
         ...prev,
-        questions: [...prev.questions, ...allowedBatch],
+        total_questions: Math.max(prev.total_questions, updatedQuestions.length),
+        questions: updatedQuestions,
       }
     })
   }
@@ -396,7 +396,6 @@ export default function TestSetFormModal({
                         type="button"
                         variant="outline"
                         size="sm"
-                        disabled={questionsCount >= totalRequired}
                         onClick={() => setIsBulkOpen(true)}
                         className="rounded-xl text-xs h-8 px-2.5 gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer disabled:opacity-50"
                       >

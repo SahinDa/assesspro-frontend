@@ -34,7 +34,9 @@ export default function BulkQuestionModal({ isOpen, onClose, onImport }: BulkQue
   const [jsonInput, setJsonInput] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  const handleParseAndImport = () => {
+  const handleParseAndImport = (e?: React.MouseEvent) => {
+    e?.preventDefault()
+    e?.stopPropagation()
     try {
       setError(null)
       const parsed = JSON.parse(jsonInput)
@@ -48,14 +50,24 @@ export default function BulkQuestionModal({ isOpen, onClose, onImport }: BulkQue
       }
 
       const sanitized: QuestionFormData[] = parsed.map((item, idx) => {
-        if (!item.question_text || item.question_text.trim().length < 10) {
-          throw new Error(`Question #${idx + 1}: question_text must be at least 10 characters long.`)
+
+        if (!item.question_text || String(item.question_text).trim().length < 3) {
+          throw new Error(`Question #${idx + 1}: question_text is missing or too short.`)
         }
-        if (!item.option_a || !item.option_b || !item.option_c || !item.option_d) {
+        if (
+          item.option_a === undefined || item.option_a === null || String(item.option_a).trim() === '' ||
+          item.option_b === undefined || item.option_b === null || String(item.option_b).trim() === '' ||
+          item.option_c === undefined || item.option_c === null || String(item.option_c).trim() === '' ||
+          item.option_d === undefined || item.option_d === null || String(item.option_d).trim() === ''
+        ) {
           throw new Error(`Question #${idx + 1}: all 4 options (option_a, option_b, option_c, option_d) are required.`)
         }
-        if (![1, 2, 3, 4].includes(Number(item.correct_answer))) {
-          throw new Error(`Question #${idx + 1}: correct_answer must be 1, 2, 3, or 4.`)
+        const letterMap: Record<string, number> = { A: 1, B: 2, C: 3, D: 4, a: 1, b: 2, c: 3, d: 4 }
+        const rawAns = item.correct_answer
+        const parsedAns = typeof rawAns === 'string' && letterMap[rawAns] ? letterMap[rawAns] : Number(rawAns)
+
+        if (![1, 2, 3, 4].includes(parsedAns)) {
+          throw new Error(`Question #${idx + 1}: correct_answer must be 1, 2, 3, 4 or "A", "B", "C", "D".`)
         }
 
         return {
@@ -64,22 +76,22 @@ export default function BulkQuestionModal({ isOpen, onClose, onImport }: BulkQue
           option_b: String(item.option_b).trim(),
           option_c: String(item.option_c).trim(),
           option_d: String(item.option_d).trim(),
-          correct_answer: Number(item.correct_answer) as CorrectAnswer,
+          correct_answer: parsedAns as CorrectAnswer,
         }
       })
-
       onImport(sanitized)
       setJsonInput('')
       onClose()
     } catch (err: any) {
+      console.error(' Validation Error:', err.message)
       setError(err.message || 'Invalid JSON format.')
     }
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[540px] rounded-2xl bg-white p-6 shadow-xl border-slate-200">
-        <DialogHeader className="space-y-1">
+      <DialogContent className="sm:max-w-[560px] max-h-[85vh] flex flex-col rounded-2xl bg-white p-6 shadow-xl border-slate-200 overflow-hidden">
+        <DialogHeader className="space-y-1 shrink-0">
           <div className="h-9 w-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-1">
             <UploadCloud className="h-5 w-5" />
           </div>
@@ -89,7 +101,7 @@ export default function BulkQuestionModal({ isOpen, onClose, onImport }: BulkQue
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 py-2">
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-3 py-2 pr-1">
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-slate-700">JSON Payload</span>
@@ -102,26 +114,25 @@ export default function BulkQuestionModal({ isOpen, onClose, onImport }: BulkQue
               </button>
             </div>
             <Textarea
-              rows={8}
               placeholder="Paste JSON array here..."
               value={jsonInput}
               onChange={(e) => {
                 setJsonInput(e.target.value)
                 if (error) setError(null)
               }}
-              className="font-mono text-xs rounded-xl border-slate-200 focus-visible:ring-indigo-500 bg-slate-50/50"
+              className="font-mono text-xs rounded-xl border-slate-200 focus-visible:ring-indigo-500 bg-slate-50/50 min-h-[200px] max-h-[340px] resize-y leading-relaxed"
             />
           </div>
 
           {error && (
             <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs">
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-              <span className="font-medium">{error}</span>
+              <span className="font-medium break-all">{error}</span>
             </div>
           )}
         </div>
 
-        <DialogFooter className="pt-2 gap-2 sm:gap-2">
+        <DialogFooter className="pt-3 gap-2 sm:gap-2 shrink-0 border-t border-slate-100">
           <Button
             type="button"
             variant="outline"
