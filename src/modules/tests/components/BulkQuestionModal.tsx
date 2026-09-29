@@ -90,7 +90,8 @@ export default function BulkQuestionModal({ isOpen, onClose, onImport }: BulkQue
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[560px] max-h-[85vh] flex flex-col rounded-2xl bg-white p-6 shadow-xl border-slate-200 overflow-hidden">
+      <DialogContent
+       className="w-[92vw] sm:w-[560px] max-w-[560px] max-h-[85vh] flex flex-col rounded-2xl bg-white p-6 shadow-xl border-slate-200 overflow-hidden">
         <DialogHeader className="space-y-1 shrink-0">
           <div className="h-9 w-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-1">
             <UploadCloud className="h-5 w-5" />
@@ -120,7 +121,7 @@ export default function BulkQuestionModal({ isOpen, onClose, onImport }: BulkQue
                 setJsonInput(e.target.value)
                 if (error) setError(null)
               }}
-              className="font-mono text-xs rounded-xl border-slate-200 focus-visible:ring-indigo-500 bg-slate-50/50 min-h-[200px] max-h-[340px] resize-y leading-relaxed"
+              className="w-full font-mono text-xs rounded-xl border-slate-200 focus-visible:ring-indigo-500 bg-slate-50/50 min-h-[200px] max-h-[340px] resize-y leading-relaxed"
             />
           </div>
 
