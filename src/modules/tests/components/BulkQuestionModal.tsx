@@ -39,7 +39,8 @@ export default function BulkQuestionModal({ isOpen, onClose, onImport }: BulkQue
     e?.stopPropagation()
     try {
       setError(null)
-      const parsed = JSON.parse(jsonInput)
+      const cleaned = jsonInput.replace(/```json/gi, '').replace(/```/g, '').trim()
+      const parsed = JSON.parse(cleaned)
 
       if (!Array.isArray(parsed)) {
         throw new Error('Input must be a JSON array of questions.')
@@ -49,33 +50,44 @@ export default function BulkQuestionModal({ isOpen, onClose, onImport }: BulkQue
         throw new Error('Array cannot be empty.')
       }
 
-      const sanitized: QuestionFormData[] = parsed.map((item, idx) => {
+      const letterMap: Record<string, number> = {
+        A: 1,
+        B: 2,
+        C: 3,
+        D: 4,
+      }
 
+      const sanitized: QuestionFormData[] = parsed.map((item: any, idx: number) => {
         if (!item.question_text || String(item.question_text).trim().length < 3) {
           throw new Error(`Question #${idx + 1}: question_text is missing or too short.`)
         }
-        if (
-          item.option_a === undefined || item.option_a === null || String(item.option_a).trim() === '' ||
-          item.option_b === undefined || item.option_b === null || String(item.option_b).trim() === '' ||
-          item.option_c === undefined || item.option_c === null || String(item.option_c).trim() === '' ||
-          item.option_d === undefined || item.option_d === null || String(item.option_d).trim() === ''
-        ) {
-          throw new Error(`Question #${idx + 1}: all 4 options (option_a, option_b, option_c, option_d) are required.`)
+
+        // Accept option_a, option_A, optionA, A, or a (and stringifies numbers like 0 or 42)
+        const optA = String(item.option_a ?? item.option_A ?? item.optionA ?? item.A ?? item.a ?? '').trim()
+        const optB = String(item.option_b ?? item.option_B ?? item.optionB ?? item.B ?? item.b ?? '').trim()
+        const optC = String(item.option_c ?? item.option_C ?? item.optionC ?? item.C ?? item.c ?? '').trim()
+        const optD = String(item.option_d ?? item.option_D ?? item.optionD ?? item.D ?? item.d ?? '').trim()
+
+        if (!optA || !optB || !optC || !optD) {
+          throw new Error(`Question #${idx + 1}: all 4 options (A, B, C, D) are required.`)
         }
-        const letterMap: Record<string, number> = { A: 1, B: 2, C: 3, D: 4, a: 1, b: 2, c: 3, d: 4 }
-        const rawAns = item.correct_answer
-        const parsedAns = typeof rawAns === 'string' && letterMap[rawAns] ? letterMap[rawAns] : Number(rawAns)
+
+        // Normalizes correct_answer to uppercase string: "a" -> "A", " 2 " -> "2", etc.
+        const rawAns = String(item.correct_answer ?? item.correctAnswer ?? item.answer ?? '').trim().toUpperCase()
+        const parsedAns = letterMap[rawAns] ?? Number(rawAns)
 
         if (![1, 2, 3, 4].includes(parsedAns)) {
-          throw new Error(`Question #${idx + 1}: correct_answer must be 1, 2, 3, 4 or "A", "B", "C", "D".`)
+          throw new Error(
+            `Question #${idx + 1}: correct_answer must be 1-4 or A-D (case-insensitive). Got: "${item.correct_answer}"`
+          )
         }
 
         return {
           question_text: String(item.question_text).trim(),
-          option_a: String(item.option_a).trim(),
-          option_b: String(item.option_b).trim(),
-          option_c: String(item.option_c).trim(),
-          option_d: String(item.option_d).trim(),
+          option_a: optA,
+          option_b: optB,
+          option_c: optC,
+          option_d: optD,
           correct_answer: parsedAns as CorrectAnswer,
         }
       })
