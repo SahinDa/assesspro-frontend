@@ -32,6 +32,7 @@ import { UserRole, type UserRoleType } from '@/config/enums'
 import type { TestSetFormData } from '../utils/testSetValidation'
 import { useTestSetList, useTestSetCount } from '../api/useTestSetQueries'
 import { useTestSetMutations } from '../api/useTestSetMutations'
+import { testSetService } from '../services/testsetService'
 
 interface TestSetsViewProps {
   testId?: string
@@ -60,7 +61,7 @@ export default function TestSetsView({
     data: testSets = [],
     isLoading,
     isError,
-    error
+    error,
   } = useTestSetList(resolvedTestId)
 
   const { data: totalCount = 0 } = useTestSetCount(resolvedTestId)
@@ -69,7 +70,7 @@ export default function TestSetsView({
   const {
     createTestSet,
     updateTestSet,
-    deleteTestSet
+    deleteTestSet,
   } = useTestSetMutations()
 
   const isStudent = userRole === UserRole.STUDENT
@@ -79,6 +80,9 @@ export default function TestSetsView({
   // State to track which set is being inspected in Details View or Test Runner
   const [selectedSetForDetails, setSelectedSetForDetails] = useState<TestSetItem | null>(null)
   const [activeRunningSet, setActiveRunningSet] = useState<TestSetItem | null>(null)
+
+  // Track async loading of full question set when clicking edit on a card
+  const [loadingEditSetId, setLoadingEditSetId] = useState<string | null>(null)
 
   // Organization-only modal & dialog states
   const [modalState, setModalState] = useState<{
@@ -90,6 +94,59 @@ export default function TestSetsView({
   })
 
   const [deletingSet, setDeletingSet] = useState<TestSetItem | null>(null)
+
+  // Directly fetch questions before opening the modal if not already present
+  const handleEditFromCard = async (set: TestSetItem) => {
+    const setId = set.set_id || (set as any).id || (set as any)._id
+
+    // If questions are already populated on this object, open directly
+    if (Array.isArray(set.questions) && set.questions.length > 0) {
+      setModalState({
+        isOpen: true,
+        testSet: {
+          ...set,
+          id: setId,
+          set_id: setId,
+        },
+      })
+      return
+    }
+
+    try {
+      setLoadingEditSetId(setId)
+
+      // Fetch the full details containing questions directly from the service
+      const res = await testSetService.getTestSet({
+        testId: resolvedTestId!,
+        testSetId: setId,
+      })
+
+      const fullData = res.data
+
+      setModalState({
+        isOpen: true,
+        testSet: {
+          ...set,
+          ...fullData,
+          id: setId,
+          set_id: setId,
+        },
+      })
+    } catch (err) {
+      console.error('Failed to load full test set questions:', err)
+      // Fallback: open with what we have
+      setModalState({
+        isOpen: true,
+        testSet: {
+          ...set,
+          id: setId,
+          set_id: setId,
+        },
+      })
+    } finally {
+      setLoadingEditSetId(null)
+    }
+  }
 
   // Handle Create and Update operations
   const handleSaveTestSet = (data: TestSetFormData, id?: string) => {
@@ -328,135 +385,145 @@ export default function TestSetsView({
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {testSets.map((set, index) => (
-            <Card
-              key={set.set_id || (set as any)._id || `set-${index}`}
-              onClick={() => {
-                if (isStudent) {
-                  setActiveRunningSet(set)
-                  onTakeTestSet?.(set.set_id)
-                } else {
-                  setSelectedSetForDetails(set)
-                }
-              }}
-              className="group relative rounded-2xl border border-slate-200/80 bg-white hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-50/50 transition-all duration-200 flex flex-col justify-between overflow-hidden cursor-pointer"
-            >
-              <div className="h-1.5 w-full bg-linear-to-r from-indigo-500 via-sky-400 to-teal-400 opacity-80" />
+          {testSets.map((set, index) => {
+            const setId = set.set_id || (set as any).id || (set as any)._id
+            const isSetLoading = loadingEditSetId === setId
 
-              <CardContent className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex flex-wrap gap-1.5">
-                    <Badge
-                      variant="outline"
-                      className="text-[11px] font-medium text-slate-700 bg-slate-50 border-slate-200 gap-1 py-0.5"
-                    >
-                      <Clock className="h-3 w-3 text-slate-400" />
-                      {set.timer_minutes}m
-                    </Badge>
-                    <Badge
-                      variant="outline"
-                      className="text-[11px] font-medium text-slate-700 bg-slate-50 border-slate-200 gap-1 py-0.5"
-                    >
-                      <HelpCircle className="h-3 w-3 text-slate-400" />
-                      {set.total_questions} Qs
-                    </Badge>
-                    <Badge
-                      variant="outline"
-                      className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border-emerald-200 gap-1 py-0.5"
-                    >
-                      <Award className="h-3 w-3 text-emerald-500" />
-                      +{set.positive_marking_value} Marks
-                    </Badge>
-                    {set.is_negative_marking && (
+            return (
+              <Card
+                key={setId || `set-${index}`}
+                onClick={() => {
+                  if (isStudent) {
+                    setActiveRunningSet(set)
+                    onTakeTestSet?.(set.set_id)
+                  } else {
+                    setSelectedSetForDetails(set)
+                  }
+                }}
+                className="group relative rounded-2xl border border-slate-200/80 bg-white hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-50/50 transition-all duration-200 flex flex-col justify-between overflow-hidden cursor-pointer"
+              >
+                <div className="h-1.5 w-full bg-linear-to-r from-indigo-500 via-sky-400 to-teal-400 opacity-80" />
+
+                <CardContent className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-wrap gap-1.5">
                       <Badge
                         variant="outline"
-                        className="text-[11px] font-medium text-rose-700 bg-rose-50 border-rose-200 gap-1 py-0.5"
+                        className="text-[11px] font-medium text-slate-700 bg-slate-50 border-slate-200 gap-1 py-0.5"
                       >
-                        -{set.negative_score_value} Neg
+                        <Clock className="h-3 w-3 text-slate-400" />
+                        {set.timer_minutes}m
                       </Badge>
+                      <Badge
+                        variant="outline"
+                        className="text-[11px] font-medium text-slate-700 bg-slate-50 border-slate-200 gap-1 py-0.5"
+                      >
+                        <HelpCircle className="h-3 w-3 text-slate-400" />
+                        {set.total_questions} Qs
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border-emerald-200 gap-1 py-0.5"
+                      >
+                        <Award className="h-3 w-3 text-emerald-500" />
+                        +{set.positive_marking_value} Marks
+                      </Badge>
+                      {set.is_negative_marking && (
+                        <Badge
+                          variant="outline"
+                          className="text-[11px] font-medium text-rose-700 bg-rose-50 border-rose-200 gap-1 py-0.5"
+                        >
+                          -{set.negative_score_value} Neg
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* 3-Dot Menu: ONLY for Organization Authors */}
+                    {isOrgAuthor && (
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer outline-none border-0 bg-transparent">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="w-36 rounded-xl p-1 shadow-lg border-slate-200 bg-white z-30"
+                          >
+                            <DropdownMenuItem
+                              disabled={isSetLoading}
+                              onClick={() => handleEditFromCard(set)}
+                              className="text-xs font-medium gap-2 rounded-lg cursor-pointer py-2 text-slate-700 hover:bg-slate-50"
+                            >
+                              {isSetLoading ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-600" />
+                              ) : (
+                                <Edit3 className="h-3.5 w-3.5 text-slate-400" />
+                              )}
+                              <span>Edit</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="my-1 bg-slate-100" />
+                            <DropdownMenuItem
+                              onClick={() => setDeletingSet(set)}
+                              className="text-xs font-medium gap-2 rounded-lg text-rose-600 hover:bg-rose-50 cursor-pointer py-2"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                              <span>Delete</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     )}
                   </div>
 
-                  {/* 3-Dot Menu: ONLY for Organization Authors */}
-                  {isOrgAuthor && (
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer outline-none border-0 bg-transparent">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-36 rounded-xl p-1 shadow-lg border-slate-200 bg-white z-30"
-                        >
-                          <DropdownMenuItem
-                            onClick={() => setModalState({ isOpen: true, testSet: set })}
-                            className="text-xs font-medium gap-2 rounded-lg cursor-pointer py-2 text-slate-700 hover:bg-slate-50"
-                          >
-                            <Edit3 className="h-3.5 w-3.5 text-slate-400" />
-                            <span>Edit</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator className="my-1 bg-slate-100" />
-                          <DropdownMenuItem
-                            onClick={() => setDeletingSet(set)}
-                            className="text-xs font-medium gap-2 rounded-lg text-rose-600 hover:bg-rose-50 cursor-pointer py-2"
-                          >
-                            <Trash2 className="h-3.5 w-3.5 text-rose-500" />
-                            <span>Delete</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                  <div className="space-y-1.5 flex-1">
+                    <h3 className="text-sm font-bold text-slate-900 tracking-tight leading-snug group-hover:text-indigo-600 transition-colors line-clamp-1">
+                      {set.name}
+                    </h3>
+                    <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed font-normal">
+                      {set.description || (isStudent ? 'Standard examination instructions apply.' : 'No specific rules or instructions provided.')}
+                    </p>
+                  </div>
+
+                  {/* Footer Buttons */}
+                  {isStudent ? (
+                    <div className="pt-2 border-t border-slate-100">
+                      <Button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setActiveRunningSet(set)
+                          onTakeTestSet?.(set.id)
+                        }}
+                        className="w-full h-9 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white gap-2 shadow-xs cursor-pointer transition-all"
+                      >
+                        <Play className="h-3.5 w-3.5 fill-current" />
+                        <span>Take Test Set</span>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                      <span>
+                        {set.questions?.length || 0} / {set.total_questions} Questions
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedSetForDetails(set)
+                        }}
+                        className="h-8 rounded-lg text-xs font-semibold px-2.5 gap-1.5 border-slate-200 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 cursor-pointer transition-all"
+                      >
+                        <Eye className="h-3 w-3" />
+                        <span>{isAdmin ? 'Inspect Questions' : 'View Details'}</span>
+                      </Button>
                     </div>
                   )}
-                </div>
-
-                <div className="space-y-1.5 flex-1">
-                  <h3 className="text-sm font-bold text-slate-900 tracking-tight leading-snug group-hover:text-indigo-600 transition-colors line-clamp-1">
-                    {set.name}
-                  </h3>
-                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed font-normal">
-                    {set.description || (isStudent ? 'Standard examination instructions apply.' : 'No specific rules or instructions provided.')}
-                  </p>
-                </div>
-
-                {/* Footer Buttons */}
-                {isStudent ? (
-                  <div className="pt-2 border-t border-slate-100">
-                    <Button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setActiveRunningSet(set)
-                        onTakeTestSet?.(set.id)
-                      }}
-                      className="w-full h-9 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white gap-2 shadow-xs cursor-pointer transition-all"
-                    >
-                      <Play className="h-3.5 w-3.5 fill-current" />
-                      <span>Take Test Set</span>
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                    <span>
-                      {set.questions?.length || 0} / {set.total_questions} Questions
-                    </span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setSelectedSetForDetails(set)
-                      }}
-                      className="h-8 rounded-lg text-xs font-semibold px-2.5 gap-1.5 border-slate-200 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 cursor-pointer transition-all"
-                    >
-                      <Eye className="h-3 w-3" />
-                      <span>{isAdmin ? 'Inspect Questions' : 'View Details'}</span>
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
 
