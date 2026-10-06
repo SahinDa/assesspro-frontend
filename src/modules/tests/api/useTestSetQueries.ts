@@ -24,6 +24,7 @@ export function useTestSetList(
     queryFn: () =>
       testSetService.testSetList({
         testId: testId!,
+        orgId:orgId!,
         ...params,
       }),
     select: (res): TestSetListItem[] => res.data,
@@ -47,6 +48,7 @@ export function useTestSetCount(
     queryFn: () =>
       testSetService.testSetCount({
         testId: testId!,
+        orgId:orgId!,
         ...params,
       }),
     select: (res): number => res.data.count,
@@ -69,6 +71,7 @@ export function useTestSetDetail(
       testSetService.getTestSet({
         testId: testId!,
         testSetId: testSetId!,
+        orgId:orgId!
       }),
     select: (res): TestSetDetailData => res.data,
     enabled: Boolean(orgId) && Boolean(testId) && Boolean(testSetId),
