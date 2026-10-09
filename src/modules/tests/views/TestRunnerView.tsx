@@ -61,6 +61,7 @@ export interface RunnerQuestion {
 }
 
 export interface TestRunnerProps {
+  testId:string
   testSetId: string
   testName?: string
   setName?: string
@@ -127,6 +128,7 @@ const MOCK_QUESTIONS: RunnerQuestion[] = [
 ]
 
 export default function TestRunnerView({
+  testId,
   testSetId,
   testName = 'Algorithms & Data Structures',
   setName = 'Set 1 - Core Fundamentals',

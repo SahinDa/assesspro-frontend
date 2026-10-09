@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { attemptService } from '../services/attempt.service';
+import { attemptService } from '../services/attemptService';
 import { ATTEMPT_MUTATION_KEYS } from './attempt.keys';
 import { useActiveOrgId } from '@/hooks/useActiveOrgId';
 import { toast } from 'sonner';
@@ -35,12 +35,16 @@ export function useAttemptMutations() {
   >({
     mutationKey: ATTEMPT_MUTATION_KEYS.start(),
     mutationFn: (payload) => {
-      const activeOrgId = payload.orgId || orgId;
       if (!activeOrgId) {
         throw new Error('Organization context is missing for this attempt.');
       }
+      if (!payload.test_id || !payload.testset_id) {
+        throw new Error('Valid test_id and testset_id are required to start an attempt.');
+      }
+
       return attemptService.startAttempt({
-        ...payload,
+        test_id: payload.test_id,
+        testset_id: payload.testset_id,
         orgId: activeOrgId,
       });
     },
