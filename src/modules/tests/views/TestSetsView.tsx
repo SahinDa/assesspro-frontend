@@ -219,7 +219,8 @@ export default function TestSetsView({
   if (isStudent && activeRunningSet) {
     return (
       <TestRunnerView
-        testSetId={activeRunningSet.id}
+        testId = {activeRunningSet.test_id}
+        testSetId={activeRunningSet.set_id}
         testName={displayName}
         setName={activeRunningSet.name}
         timerMinutes={activeRunningSet.timer_minutes}
