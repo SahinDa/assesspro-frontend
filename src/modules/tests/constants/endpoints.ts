@@ -22,4 +22,15 @@ export const TEST_ENDPOINTS = {
   TOGGLE_TESTSET_STATUS: (testId: string, testSetId: string) => `/tests/${testId}/testset/${testSetId}/toggle-status`,
   DELETE_TESTSET: (testId: string, testSetId: string) => `/tests/${testId}/testset/${testSetId}`,
   TESTSETS_PER_TEST: '/tests/sets-per-test',
+
+   // ===============================
+  // ATTEMPT Level Endpoints
+  // Base controller prefix: /attempts
+  // ===============================
+
+  START_ATTEMPT:'/attempts/start',
+  SAVE_PROGRESS:(attemptId:string)=>`/attempts/${attemptId}/save-progress`,
+  SUBMIT_ATTEMPT:(attemptId:string)=>`/attempts/${attemptId}/submit`,
+  DISCONNECT_ATTEMPT:(attemptId:string)=>`/attempts/${attemptId}/disconnect`,
+  RECORD_VIOLATION:(attemptId:string) =>`/attempts/${attemptId}/violation`,
 } as const;
