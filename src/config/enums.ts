@@ -195,3 +195,18 @@ export enum QuestionSource {
   MANUAL = 1,
   PDF = 2,
 }
+
+export enum AnswerOption {
+  A = 1,
+  B = 2,
+  C = 3,
+  D = 4,
+}
+
+export enum SubmissionType {
+  Manual = 1, // Student clicked the submit button cleanly
+  TIMEOUT = 2, // Timer hit 00:00 and auto-submitted
+  DISCONNECTED = 3, // Caught tab close or browser close via emergency flush
+  SYSTEM_TERMINATED = 4, // Force-submitted by the backend due to exceeding violation limits
+  CRON_FORCE_SUBMIT = 5,
+}
