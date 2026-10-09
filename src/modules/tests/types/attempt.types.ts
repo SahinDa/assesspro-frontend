@@ -1,4 +1,4 @@
-import { AnswerOption,SubmissionType , ViolationType} from '@/config/enum'
+import { AnswerOption,SubmissionType , ViolationType} from '@/config/enums'
 export interface BackendRunnerQuestion {
     question_id: string
     set_id: string

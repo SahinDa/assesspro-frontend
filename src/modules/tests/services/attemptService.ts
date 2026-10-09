@@ -1,6 +1,6 @@
 import { apiClient } from '@/lib/apiClient';
 import { TEST_ENDPOINTS } from '../constants/endpoints';
-import {
+import type {
     StartAttemptPayload,
     StartAttemptResponseData,
     SaveProgressPayload,
