@@ -210,3 +210,12 @@ export enum SubmissionType {
   SYSTEM_TERMINATED = 4, // Force-submitted by the backend due to exceeding violation limits
   CRON_FORCE_SUBMIT = 5,
 }
+
+export enum ViolationType {
+  TAB_SWITCH = 1,
+  WINDOW_BLUR = 2,
+  FULLSCREEN_EXIT = 3,
+  CLIPBOARD_COPY = 4,
+  CLIPBOARD_PASTE = 5,
+  DEV_TOOLS = 6,
+}

@@ -1,3 +1,4 @@
+import { AnswerOption,SubmissionType , ViolationType} from '@/config/enum'
 export interface BackendRunnerQuestion {
     question_id: string
     set_id: string
@@ -36,3 +37,70 @@ export interface BackendRunnerQuestion {
     testsetDetails: BackendTestSetDetails
     message: string
   }
+
+  export interface StartAttemptPayload{
+    test_id:string;
+    testset_id: string;
+    orgId: string;
+  }
+
+export interface SingleAnswerDto {
+  question_id: string
+  selected_option: AnswerOption
+}
+
+export interface SaveProgressBulkDto {
+  answers: SingleAnswerDto[]
+}
+
+export interface SaveProgressPayload {
+  attemptId:string;
+  payload:SaveProgressBulkDto
+}
+
+export interface SaveProgressResponse{
+  message:string;
+}
+export interface FinalSubmitPayload{
+  submitted_via:SubmissionType,
+  answers:SingleAnswerDto[]
+}
+export interface SubmitAttemptPayload{
+  attemptId:string,
+  payload:FinalSubmitPayload,
+}
+
+export interface SubmitAttemptResponse{
+  success: boolean,
+  score: number,
+  submitted_via: number,
+  message: string,
+}
+
+export interface DisconnectAttemptPayload{
+  attemptId:string;
+  payload:FinalSubmitPayload
+}
+
+export interface DisconnectAttemptResponse{
+  success: boolean,
+  score: number,
+  submitted_via: number,
+  message: string,
+}
+export interface ReportViolationDto {
+  violation_type: ViolationType;
+  orgId: string;
+}
+export interface RecordViolationPayload{
+  attemptId:string;
+  payload:ReportViolationDto;
+}
+
+export interface RecordViolationResponse{
+  status: string;
+  message:string;
+  current_score?: number,
+  max_allowed?:number,
+  terminated?: boolean
+}
