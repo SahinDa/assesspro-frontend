@@ -219,3 +219,12 @@ export enum ViolationType {
   CLIPBOARD_PASTE = 5,
   DEV_TOOLS = 6,
 }
+
+export const VIOLATION_TITLES: Record<ViolationType, string> = {
+  [ViolationType.TAB_SWITCH]: 'Tab Switch Detected',
+  [ViolationType.WINDOW_BLUR]: 'Window Focus Lost',
+  [ViolationType.FULLSCREEN_EXIT]: 'Fullscreen Mode Exited',
+  [ViolationType.CLIPBOARD_COPY]: 'Clipboard Copy Disabled',
+  [ViolationType.CLIPBOARD_PASTE]: 'Clipboard Paste Disabled',
+  [ViolationType.DEV_TOOLS]: 'Developer Tools Access Attempt',
+};

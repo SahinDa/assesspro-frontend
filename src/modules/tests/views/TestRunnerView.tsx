@@ -30,25 +30,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { CorrectAnswer } from '@/config/enums'
+import { useAttemptMutations } from '../api/useAttemptMutations'
+import type { SingleAnswerDto, StartAttemptResponseData } from '../types/attempt.types'
+import { 
+    AnswerOption,
+   SubmissionType,
+   ViolationType,
+  VIOLATION_TITLES,
+  } from '@/config/enums'
 
-// 6 Proctoring Violation Enums
-export enum ViolationType {
-  TAB_SWITCH = 1,
-  WINDOW_BLUR = 2,
-  FULLSCREEN_EXIT = 3,
-  CLIPBOARD_COPY = 4,
-  CLIPBOARD_PASTE = 5,
-  DEV_TOOLS = 6,
-}
-
-const VIOLATION_TITLES: Record<ViolationType, string> = {
-  [ViolationType.TAB_SWITCH]: 'Tab Switch Detected',
-  [ViolationType.WINDOW_BLUR]: 'Window Focus Lost',
-  [ViolationType.FULLSCREEN_EXIT]: 'Fullscreen Mode Exited',
-  [ViolationType.CLIPBOARD_COPY]: 'Clipboard Copy Disabled',
-  [ViolationType.CLIPBOARD_PASTE]: 'Clipboard Paste Disabled',
-  [ViolationType.DEV_TOOLS]: 'Developer Tools Access Attempt',
-}
 
 export interface RunnerQuestion {
   id: string
