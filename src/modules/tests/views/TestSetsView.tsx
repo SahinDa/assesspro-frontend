@@ -33,6 +33,7 @@ import type { TestSetFormData } from '../utils/testSetValidation'
 import { useTestSetList, useTestSetCount } from '../api/useTestSetQueries'
 import { useTestSetMutations } from '../api/useTestSetMutations'
 import { testSetService } from '../services/testsetService'
+import {useAttemptMutations} from '../api/useAttemptMutations'
 
 interface TestSetsViewProps {
   testId?: string
@@ -72,10 +73,26 @@ export default function TestSetsView({
     updateTestSet,
     deleteTestSet,
   } = useTestSetMutations()
+  const { startAttempt } = useAttemptMutations()
+  const [sessionData, setSessionData] = useState<any>(null)
 
   const isStudent = userRole === UserRole.STUDENT
   const isAdmin = userRole === UserRole.ADMIN || readOnly
   const isOrgAuthor = userRole === UserRole.ORGANIZATION && !readOnly
+
+  const handleTakeTest = (set: TestSetItem) => {
+    if (!resolvedTestId || !set.set_id) return
+  
+    startAttempt.mutate(
+      { test_id: resolvedTestId, testset_id: set.set_id },
+      {
+        onSuccess: (res) => {
+          onTakeTestSet?.(set.set_id)
+          setSessionData(res.data)
+        },
+      }
+    )
+  }
 
   // State to track which set is being inspected in Details View or Test Runner
   const [selectedSetForDetails, setSelectedSetForDetails] = useState<TestSetItem | null>(null)
@@ -216,19 +233,15 @@ export default function TestSetsView({
   }
 
   // STUDENT ONLY: Launch Active Test Runner
-  if (isStudent && activeRunningSet) {
+  if (isStudent && sessionData) {
     return (
       <TestRunnerView
-        testId = {activeRunningSet.test_id}
-        testSetId={activeRunningSet.set_id}
+        attemptId={sessionData.attempt_id}
+        questions={sessionData.testsetDetails?.questions || []}
+        timerMinutes={sessionData.timer_minutes || sessionData.testsetDetails?.timer_minutes || 30}
         testName={displayName}
-        setName={activeRunningSet.name}
-        timerMinutes={activeRunningSet.timer_minutes}
-        positiveMarks={activeRunningSet.positive_marking_value}
-        negativeMarks={activeRunningSet.negative_score_value}
-        isNegativeMarking={activeRunningSet.is_negative_marking}
-        isPreview={false}
-        onExit={() => setActiveRunningSet(null)}
+        setName={sessionData.testsetDetails?.name}
+        onExit={() => setSessionData(null)}
       />
     )
   }
@@ -395,7 +408,7 @@ export default function TestSetsView({
                 key={setId || `set-${index}`}
                 onClick={() => {
                   if (isStudent) {
-                    setActiveRunningSet(set)
+                    handleTakeTest(set)
                     onTakeTestSet?.(set.set_id)
                   } else {
                     setSelectedSetForDetails(set)
@@ -492,8 +505,8 @@ export default function TestSetsView({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation()
-                          setActiveRunningSet(set)
-                          onTakeTestSet?.(set.id)
+                          handleTakeTest(set)
+                          onTakeTestSet?.(set.set_id)
                         }}
                         className="w-full h-9 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white gap-2 shadow-xs cursor-pointer transition-all"
                       >
