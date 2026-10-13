@@ -32,12 +32,12 @@ import {
 import { CorrectAnswer } from '@/config/enums'
 import { useAttemptMutations } from '../api/useAttemptMutations'
 import type { SingleAnswerDto, StartAttemptResponseData } from '../types/attempt.types'
-import { 
-    AnswerOption,
-   SubmissionType,
-   ViolationType,
+import {
+  AnswerOption,
+  SubmissionType,
+  ViolationType,
   VIOLATION_TITLES,
-  } from '@/config/enums'
+} from '@/config/enums'
 
 
 export interface RunnerQuestion {
@@ -51,8 +51,8 @@ export interface RunnerQuestion {
 }
 
 export interface TestRunnerProps {
-  testId:string
-  testSetId: string
+  attemptId: string
+  questions?: any[]
   testName?: string
   setName?: string
   timerMinutes?: number
@@ -69,57 +69,10 @@ export interface TestRunnerProps {
   }) => void
 }
 
-const MOCK_QUESTIONS: RunnerQuestion[] = [
-  {
-    id: 'q-1',
-    question_text: "What is the time complexity of Dijkstra's algorithm implemented with a binary min-heap for a graph with V vertices and E edges?",
-    option_a: 'O(V^2)',
-    option_b: 'O((V + E) log V)',
-    option_c: 'O(E log V)',
-    option_d: 'O(V log E)',
-    correct_answer: CorrectAnswer.B,
-  },
-  {
-    id: 'q-2',
-    question_text: 'Which standard data structure is utilized in Breadth-First Search (BFS) graph traversal?',
-    option_a: 'Stack (LIFO)',
-    option_b: 'Queue (FIFO)',
-    option_c: 'Self-balancing Binary Search Tree',
-    option_d: 'Priority Queue with max-heap',
-    correct_answer: CorrectAnswer.B,
-  },
-  {
-    id: 'q-3',
-    question_text: 'In relational database transactions, which ACID property guarantees that committed transactions survive catastrophic server crashes?',
-    option_a: 'Atomicity',
-    option_b: 'Consistency',
-    option_c: 'Isolation',
-    option_d: 'Durability',
-    correct_answer: CorrectAnswer.D,
-  },
-  {
-    id: 'q-4',
-    question_text: 'What is the worst-case time complexity of searching for a key in a balanced Red-Black Tree with N nodes?',
-    option_a: 'O(1)',
-    option_b: 'O(log N)',
-    option_c: 'O(N)',
-    option_d: 'O(N log N)',
-    correct_answer: CorrectAnswer.B,
-  },
-  {
-    id: 'q-5',
-    question_text: 'Which network layer protocol is primarily responsible for mapping an IP address to a physical MAC hardware address?',
-    option_a: 'DNS',
-    option_b: 'ARP',
-    option_c: 'DHCP',
-    option_d: 'ICMP',
-    correct_answer: CorrectAnswer.B,
-  },
-]
 
 export default function TestRunnerView({
-  testId,
-  testSetId,
+  attemptId,
+  questions: initialQuestions = [],
   testName = 'Algorithms & Data Structures',
   setName = 'Set 1 - Core Fundamentals',
   timerMinutes = 30,
@@ -130,8 +83,18 @@ export default function TestRunnerView({
   onExit,
   onSubmitAttempt,
 }: TestRunnerProps) {
-  const [isInitializing, setIsInitializing] = useState(true)
-  const [questions, setQuestions] = useState<RunnerQuestion[]>([])
+
+  const [questions, setQuestions] = useState<RunnerQuestion[]>(() =>
+    (initialQuestions || []).map((q: any) => ({
+      id: q.question_id || q.id,
+      question_text: q.question_text,
+      option_a: q.option_a,
+      option_b: q.option_b,
+      option_c: q.option_c,
+      option_d: q.option_d,
+    }))
+  )
+
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [markedForReview, setMarkedForReview] = useState<Record<string, boolean>>({})
@@ -145,7 +108,7 @@ export default function TestRunnerView({
   // 6 Violations Tracking
   const [violations, setViolations] = useState<Array<{ type: ViolationType; timestamp: number; label: string }>>([])
   const [activeWarning, setActiveWarning] = useState<{ type: ViolationType; message: string; count: number } | null>(null)
-  
+
   const [showSubmitModal, setShowSubmitModal] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
 
@@ -186,25 +149,11 @@ export default function TestRunnerView({
   // 2. INITIALIZE TEST
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    const initializeExam = async () => {
-      setIsInitializing(true)
-      try {
-        await new Promise((res) => setTimeout(res, 400))
-        setQuestions(MOCK_QUESTIONS)
-        setVisitedQuestions({ 'q-1': true })
-      } finally {
-        setIsInitializing(false)
-      }
-    }
-    initializeExam()
-  }, [testSetId])
-
-  useEffect(() => {
-    if (!isInitializing && !hasInitializedFullscreen.current) {
+    if (!hasInitializedFullscreen.current) {
       hasInitializedFullscreen.current = true
       enterFullscreen()
     }
-  }, [isInitializing, enterFullscreen])
+  }, [enterFullscreen])
 
   // ---------------------------------------------------------------------------
   // 3. VIOLATION RECORDER
@@ -235,7 +184,7 @@ export default function TestRunnerView({
   // 4. LISTENERS FOR ALL 6 VIOLATION TYPES
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (isInitializing || isSubmitted) return
+    if (isSubmitted) return
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
@@ -299,13 +248,13 @@ export default function TestRunnerView({
       window.removeEventListener('keydown', handleKeyDown)
       document.removeEventListener('contextmenu', handleContextMenu)
     }
-  }, [isInitializing, isSubmitted, triggerViolation])
+  }, [isSubmitted, triggerViolation])
 
   // ---------------------------------------------------------------------------
   // 5. COUNTDOWN TIMER & SUBMIT
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (isInitializing || isSubmitted) return
+    if (isSubmitted) return
 
     const timer = setInterval(() => {
       setSecondsRemaining((prev) => {
@@ -319,14 +268,14 @@ export default function TestRunnerView({
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [isInitializing, isSubmitted])
+  }, [isSubmitted])
 
   const handleFinalSubmit = () => {
     setShowSubmitModal(false)
     setIsSubmitted(true)
 
     if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {})
+      document.exitFullscreen().catch(() => { })
     }
 
     const payload = {
@@ -379,20 +328,6 @@ export default function TestRunnerView({
   const notVisitedCount = questions.filter((q) => !visitedQuestions[q.id]).length
   const notAnsweredCount = questions.length - answeredCount
 
-  // ---------------------------------------------------------------------------
-  // 6. INITIAL LOADING STATE
-  // ---------------------------------------------------------------------------
-  if (isInitializing) {
-    return (
-      <div className="fixed inset-0 z-50 bg-slate-50 flex flex-col items-center justify-center space-y-3">
-        <Loader2 className="h-8 w-8 text-indigo-600 animate-spin" />
-        <div className="text-center">
-          <p className="text-sm font-bold text-slate-800">Entering Secure Test Runner...</p>
-          <p className="text-xs text-slate-500">Initializing anti-cheat monitors and full-screen workspace.</p>
-        </div>
-      </div>
-    )
-  }
 
   // ---------------------------------------------------------------------------
   // 7. SUBMITTED RESULTS SUMMARY
@@ -587,11 +522,10 @@ export default function TestRunnerView({
           {/* TIMER & CONTROLS */}
           <div className="flex items-center gap-3">
             <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold font-mono tracking-wider ${
-                secondsRemaining < 300
-                  ? 'bg-rose-50 border-rose-200 text-rose-600 animate-pulse'
-                  : 'bg-indigo-50/70 border-indigo-100 text-indigo-700'
-              }`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold font-mono tracking-wider ${secondsRemaining < 300
+                ? 'bg-rose-50 border-rose-200 text-rose-600 animate-pulse'
+                : 'bg-indigo-50/70 border-indigo-100 text-indigo-700'
+                }`}
             >
               <Clock className="h-4 w-4" />
               <span>{formatTimer(secondsRemaining)}</span>
@@ -663,11 +597,10 @@ export default function TestRunnerView({
                     variant="ghost"
                     size="sm"
                     onClick={() => currentQ && handleToggleReview(currentQ.id)}
-                    className={`h-8 px-2.5 text-xs font-semibold rounded-xl gap-1.5 cursor-pointer ${
-                      currentQ && markedForReview[currentQ.id]
-                        ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                        : 'text-slate-500 hover:bg-slate-100'
-                    }`}
+                    className={`h-8 px-2.5 text-xs font-semibold rounded-xl gap-1.5 cursor-pointer ${currentQ && markedForReview[currentQ.id]
+                      ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                      : 'text-slate-500 hover:bg-slate-100'
+                      }`}
                   >
                     <Bookmark className="h-3.5 w-3.5" />
                     <span>
@@ -690,18 +623,16 @@ export default function TestRunnerView({
                       <div
                         key={opt.key}
                         onClick={() => currentQ && handleSelectOption(currentQ.id, opt.value)}
-                        className={`flex items-center gap-3 p-3 rounded-2xl border text-xs font-medium cursor-pointer transition-all ${
-                          isSelected
-                            ? 'border-indigo-600 bg-indigo-50/40 text-indigo-950 ring-1 ring-indigo-500/40'
-                            : 'border-slate-200/90 bg-white hover:bg-slate-50/80 text-slate-800'
-                        }`}
+                        className={`flex items-center gap-3 p-3 rounded-2xl border text-xs font-medium cursor-pointer transition-all ${isSelected
+                          ? 'border-indigo-600 bg-indigo-50/40 text-indigo-950 ring-1 ring-indigo-500/40'
+                          : 'border-slate-200/90 bg-white hover:bg-slate-50/80 text-slate-800'
+                          }`}
                       >
                         <div
-                          className={`h-6 w-6 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 transition-colors ${
-                            isSelected
-                              ? 'bg-indigo-600 text-white'
-                              : 'bg-slate-100 text-slate-600'
-                          }`}
+                          className={`h-6 w-6 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 transition-colors ${isSelected
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-slate-100 text-slate-600'
+                            }`}
                         >
                           {opt.label}
                         </div>
@@ -804,9 +735,8 @@ export default function TestRunnerView({
                         key={q.id}
                         type="button"
                         onClick={() => navigateTo(idx)}
-                        className={`h-9 w-full rounded-xl text-xs flex items-center justify-center border transition-all cursor-pointer ${tileClass} ${
-                          isCurrent ? 'ring-2 ring-indigo-600 ring-offset-2 scale-105' : ''
-                        }`}
+                        className={`h-9 w-full rounded-xl text-xs flex items-center justify-center border transition-all cursor-pointer ${tileClass} ${isCurrent ? 'ring-2 ring-indigo-600 ring-offset-2 scale-105' : ''
+                          }`}
                       >
                         {idx + 1}
                       </button>
