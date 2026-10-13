@@ -35,7 +35,8 @@ export function useAttemptMutations() {
   >({
     mutationKey: ATTEMPT_MUTATION_KEYS.start(),
     mutationFn: (payload) => {
-      if (!activeOrgId) {
+
+      if (!orgId) {
         throw new Error('Organization context is missing for this attempt.');
       }
       if (!payload.test_id || !payload.testset_id) {
@@ -45,7 +46,7 @@ export function useAttemptMutations() {
       return attemptService.startAttempt({
         test_id: payload.test_id,
         testset_id: payload.testset_id,
-        orgId: activeOrgId,
+        orgId,
       });
     },
     onError: (error) => {
