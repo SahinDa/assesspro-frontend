@@ -46,7 +46,7 @@ export interface BackendRunnerQuestion {
 
 export interface SingleAnswerDto {
   question_id: string
-  selected_option: AnswerOption
+  selected_option: AnswerOption | null;
 }
 
 export interface SaveProgressBulkDto {
