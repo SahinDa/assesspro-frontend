@@ -31,14 +31,13 @@ import {
 } from '@/components/ui/dialog'
 import { CorrectAnswer } from '@/config/enums'
 import { useAttemptMutations } from '../api/useAttemptMutations'
-import type { SingleAnswerDto, StartAttemptResponseData } from '../types/attempt.types'
+import type { SingleAnswerDto,SaveProgressPayload , StartAttemptResponseData } from '../types/attempt.types'
 import {
   AnswerOption,
   SubmissionType,
   ViolationType,
   VIOLATION_TITLES,
 } from '@/config/enums'
-
 
 export interface RunnerQuestion {
   id: string
@@ -100,6 +99,10 @@ export default function TestRunnerView({
   const [markedForReview, setMarkedForReview] = useState<Record<string, boolean>>({})
   const [visitedQuestions, setVisitedQuestions] = useState<Record<string, boolean>>({})
 
+  const { saveProgress } = useAttemptMutations()
+ 
+
+  
   // Timer & Screen
   const [secondsRemaining, setSecondsRemaining] = useState(timerMinutes * 60)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -115,6 +118,62 @@ export default function TestRunnerView({
   const totalSecondsRef = useRef(timerMinutes * 60)
   const hasInitializedFullscreen = useRef(false)
 
+  const answersRef = useRef<Record<string, number>>(answers)
+  const savedAnswersRef = useRef<Record<string, number>>({})
+
+  useEffect(() => {
+    answersRef.current = answers
+  }, [answers])
+
+  // ---------------------------------------------------------------------------
+  // AUTO-SAVE DISPATCHER
+  // ---------------------------------------------------------------------------
+  const triggerSaveProgress = useCallback(async () => {
+    if (isSubmitted || isPreview || !attemptId) return
+
+    const currentAnswers = answersRef.current
+    const previouslySaved = savedAnswersRef.current
+
+    const changedAnswers: SingleAnswerDto[] = []
+
+    // 1. Detect New answers & Modified answers
+    for (const [question_id, selected_option] of Object.entries(currentAnswers)) {
+      if (previouslySaved[question_id] !== selected_option) {
+        changedAnswers.push({
+          question_id,
+          selected_option: selected_option as AnswerOption,
+        })
+      }
+    }
+
+    // 2. Detect Cleared / Omitted answers (Present in saved, but missing in current)
+    for (const previouslySavedId of Object.keys(previouslySaved)) {
+      if (currentAnswers[previouslySavedId] === undefined) {
+        changedAnswers.push({
+          question_id: previouslySavedId,
+          selected_option: null, // 👈 Dispatches deletion to backend
+        })
+      }
+    }
+
+    // If nothing was added, modified, or cleared, skip network sync
+    if (changedAnswers.length === 0) return
+
+    const payload: SaveProgressPayload = {
+      attemptId,
+      payload: {
+        answers: changedAnswers,
+      },
+    }
+
+    try {
+      await saveProgress.mutateAsync(payload)
+      // On success, update the saved cache to match current selections
+      savedAnswersRef.current = { ...currentAnswers }
+    } catch (err) {
+      console.error('Failed to auto-save test progress:', err)
+    }
+  }, [attemptId, isSubmitted, isPreview, saveProgress])
   // ---------------------------------------------------------------------------
   // 1. AUTO FULLSCREEN REQUEST ON START
   // ---------------------------------------------------------------------------
@@ -269,6 +328,22 @@ export default function TestRunnerView({
 
     return () => clearInterval(timer)
   }, [isSubmitted])
+
+
+const triggerSaveRef = useRef(triggerSaveProgress)
+useEffect(() => {
+  triggerSaveRef.current = triggerSaveProgress
+}, [triggerSaveProgress])
+
+useEffect(() => {
+  if (isSubmitted || isPreview || !attemptId) return
+
+  const intervalId = setInterval(() => {
+    triggerSaveRef.current()
+  }, 60 * 1000)
+
+  return () => clearInterval(intervalId)
+}, [isSubmitted, isPreview,attemptId])
 
   const handleFinalSubmit = () => {
     setShowSubmitModal(false)
