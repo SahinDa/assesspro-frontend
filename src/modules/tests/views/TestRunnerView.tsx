@@ -97,16 +97,18 @@ export default function TestRunnerView({
   const [markedForReview, setMarkedForReview] = useState<Record<string, boolean>>({})
   const [visitedQuestions, setVisitedQuestions] = useState<Record<string, boolean>>({})
 
-  const { saveProgress } = useAttemptMutations()
+  const { saveProgress, submitAttempt } = useAttemptMutations()
 
-  const [isSubmitting] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const isSubmittingRef = useRef(false)
+  const isSavingRef = useRef(false)
 
   // Timer & Screen
   const [secondsRemaining, setSecondsRemaining] = useState(timerMinutes * 60)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [fullscreenRequiredPrompt, setFullscreenRequiredPrompt] = useState(false)
 
-  // 6 Violations Tracking
+  // Violations Tracking
   const [violations, setViolations] = useState<Array<{ type: ViolationType; timestamp: number; label: string }>>([])
   const [activeWarning, setActiveWarning] = useState<{ type: ViolationType; message: string; count: number } | null>(null)
 
@@ -118,23 +120,33 @@ export default function TestRunnerView({
 
   const answersRef = useRef<Record<string, number>>(answers)
   const savedAnswersRef = useRef<Record<string, number>>({})
+  const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     answersRef.current = answers
   }, [answers])
 
   // ---------------------------------------------------------------------------
-  // AUTO-SAVE DISPATCHER
+  // AUTO-SAVE DISPATCHER (DEADZONE + IN-FLIGHT MUTEX)
   // ---------------------------------------------------------------------------
   const triggerSaveProgress = useCallback(async () => {
-    if (isSubmitted || isPreview || !attemptId) return
+    // Hard stop if submitted, submitting, active in-flight save, or within final 10s deadzone
+    if (
+      isSubmittingRef.current ||
+      isSubmitted ||
+      isPreview ||
+      !attemptId ||
+      isSavingRef.current ||
+      secondsRemaining <= 10
+    ) {
+      return
+    }
 
     const currentAnswers = answersRef.current
     const previouslySaved = savedAnswersRef.current
 
     const changedAnswers: SingleAnswerDto[] = []
 
-    // 1. Detect New answers & Modified answers
     for (const [question_id, selected_option] of Object.entries(currentAnswers)) {
       if (previouslySaved[question_id] !== selected_option) {
         changedAnswers.push({
@@ -144,12 +156,11 @@ export default function TestRunnerView({
       }
     }
 
-    // 2. Detect Cleared / Omitted answers (Present in saved, but missing in current)
     for (const previouslySavedId of Object.keys(previouslySaved)) {
       if (currentAnswers[previouslySavedId] === undefined) {
         changedAnswers.push({
           question_id: previouslySavedId,
-          selected_option: null,
+          selected_option: null as any,
         })
       }
     }
@@ -164,12 +175,15 @@ export default function TestRunnerView({
     }
 
     try {
+      isSavingRef.current = true
       await saveProgress.mutateAsync(payload)
       savedAnswersRef.current = { ...currentAnswers }
     } catch (err) {
       console.error('Failed to auto-save test progress:', err)
+    } finally {
+      isSavingRef.current = false
     }
-  }, [attemptId, isSubmitted, isPreview, saveProgress])
+  }, [attemptId, isSubmitted, isPreview, secondsRemaining, saveProgress])
 
   // ---------------------------------------------------------------------------
   // 1. AUTO FULLSCREEN REQUEST ON START
@@ -216,7 +230,7 @@ export default function TestRunnerView({
   // ---------------------------------------------------------------------------
   const triggerViolation = useCallback(
     (type: ViolationType, customMessage?: string) => {
-      if (isSubmitted || isPreview) return
+      if (isSubmittingRef.current || isSubmitted || isPreview) return
 
       const label = VIOLATION_TITLES[type] || 'Integrity Violation'
       const message = customMessage || `${label} has been logged.`
@@ -243,35 +257,40 @@ export default function TestRunnerView({
     if (isSubmitted) return
 
     const handleVisibilityChange = () => {
+      if (isSubmittingRef.current || isSubmitted) return
       if (document.hidden) {
         triggerViolation(ViolationType.TAB_SWITCH, 'Tab switch or window minimization detected.')
       }
     }
 
     const handleWindowBlur = () => {
+      if (isSubmittingRef.current || isSubmitted) return
       triggerViolation(ViolationType.WINDOW_BLUR, 'Focus lost from the test runner window.')
     }
 
     const handleFullscreenChange = () => {
       const inFullscreen = Boolean(document.fullscreenElement)
       setIsFullscreen(inFullscreen)
-      if (!inFullscreen && !isSubmitted) {
+      if (!inFullscreen && !isSubmitted && !isSubmittingRef.current) {
         setFullscreenRequiredPrompt(true)
         triggerViolation(ViolationType.FULLSCREEN_EXIT, 'Fullscreen mode was exited.')
       }
     }
 
     const handleCopy = (e: ClipboardEvent) => {
+      if (isSubmittingRef.current || isSubmitted) return
       e.preventDefault()
       triggerViolation(ViolationType.CLIPBOARD_COPY, 'Copying question content is prohibited.')
     }
 
     const handlePaste = (e: ClipboardEvent) => {
+      if (isSubmittingRef.current || isSubmitted) return
       e.preventDefault()
       triggerViolation(ViolationType.CLIPBOARD_PASTE, 'Pasting external content is prohibited.')
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isSubmittingRef.current || isSubmitted) return
       const isDevKey =
         e.key === 'F12' ||
         ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) ||
@@ -307,8 +326,105 @@ export default function TestRunnerView({
   }, [isSubmitted, triggerViolation])
 
   // ---------------------------------------------------------------------------
-  // 5. COUNTDOWN TIMER & SUBMIT
+  // 5. SUBMIT HANDLER (DISARMS AUTO-SAVE & SUBMITS DELTA)
   // ---------------------------------------------------------------------------
+  const handleFinalSubmit = useCallback(
+    async (submissionType: SubmissionType = SubmissionType.MANUAL) => {
+      if (isSubmittingRef.current || isSubmitted) return
+
+      // 🔒 Synchronous lock on line 1 prevents any further ticks or triggers
+      isSubmittingRef.current = true
+      setIsSubmitting(true)
+
+      //  Cancel the interval immediately
+      if (autoSaveTimerRef.current) {
+        clearInterval(autoSaveTimerRef.current)
+        autoSaveTimerRef.current = null
+      }
+
+      if (isPreview) {
+        setShowSubmitModal(false)
+        setIsSubmitted(true)
+        return
+      }
+
+      if (!attemptId) {
+        isSubmittingRef.current = false
+        setIsSubmitting(false)
+        return
+      }
+
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {})
+      }
+
+      const currentAnswers = answersRef.current
+      const previouslySaved = savedAnswersRef.current
+
+      // Calculate unsaved delta from recent seconds
+      const unsavedAnswers: SingleAnswerDto[] = []
+
+      for (const [question_id, selected_option] of Object.entries(currentAnswers)) {
+        if (previouslySaved[question_id] !== selected_option) {
+          unsavedAnswers.push({
+            question_id,
+            selected_option: selected_option as AnswerOption,
+          })
+        }
+      }
+
+      for (const previouslySavedId of Object.keys(previouslySaved)) {
+        if (currentAnswers[previouslySavedId] === undefined) {
+          unsavedAnswers.push({
+            question_id: previouslySavedId,
+            selected_option: null as any,
+          })
+        }
+      }
+
+      try {
+        await submitAttempt.mutateAsync({
+          attemptId,
+          payload: {
+            submitted_via: submissionType,
+            answers: unsavedAnswers.length > 0 ? unsavedAnswers : undefined,
+          },
+        })
+
+        setShowSubmitModal(false)
+        setIsSubmitted(true)
+
+        onSubmitAttempt?.({
+          attemptId,
+          answers: currentAnswers,
+          timeSpentSeconds: totalSecondsRef.current - secondsRemaining,
+          violations,
+        })
+      } catch (error) {
+        console.error('Final submit failed:', error)
+        isSubmittingRef.current = false
+        setIsSubmitting(false)
+      }
+    },
+    [
+      attemptId,
+      isSubmitted,
+      isPreview,
+      secondsRemaining,
+      violations,
+      submitAttempt,
+      onSubmitAttempt,
+    ]
+  )
+
+  // ---------------------------------------------------------------------------
+  // 6. COUNTDOWN TIMER & AUTO-SUBMIT
+  // ---------------------------------------------------------------------------
+  const handleFinalSubmitRef = useRef(handleFinalSubmit)
+  useEffect(() => {
+    handleFinalSubmitRef.current = handleFinalSubmit
+  }, [handleFinalSubmit])
+
   useEffect(() => {
     if (isSubmitted) return
 
@@ -316,7 +432,7 @@ export default function TestRunnerView({
       setSecondsRemaining((prev) => {
         if (prev <= 1) {
           clearInterval(timer)
-          handleFinalSubmit()
+          handleFinalSubmitRef.current(SubmissionType.TIMEOUT)
           return 0
         }
         return prev - 1
@@ -326,6 +442,9 @@ export default function TestRunnerView({
     return () => clearInterval(timer)
   }, [isSubmitted])
 
+  // ---------------------------------------------------------------------------
+  // 7. AUTO-SAVE INTERVAL (EVERY 60 SECONDS)
+  // ---------------------------------------------------------------------------
   const triggerSaveRef = useRef(triggerSaveProgress)
   useEffect(() => {
     triggerSaveRef.current = triggerSaveProgress
@@ -334,31 +453,17 @@ export default function TestRunnerView({
   useEffect(() => {
     if (isSubmitted || isPreview || !attemptId) return
 
-    const intervalId = setInterval(() => {
+    autoSaveTimerRef.current = setInterval(() => {
       triggerSaveRef.current()
     }, 60 * 1000)
 
-    return () => clearInterval(intervalId)
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearInterval(autoSaveTimerRef.current)
+        autoSaveTimerRef.current = null
+      }
+    }
   }, [isSubmitted, isPreview, attemptId])
-
-  const handleFinalSubmit = () => {
-    setShowSubmitModal(false)
-    setIsSubmitted(true)
-
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {})
-    }
-
-    const payload = {
-      answers: answersRef.current,
-      timeSpentSeconds: totalSecondsRef.current - secondsRemaining,
-      violations,
-    }
-
-    if (!isPreview) {
-      onSubmitAttempt?.(payload)
-    }
-  }
 
   const currentQ = questions[currentIndex]
 
@@ -400,7 +505,7 @@ export default function TestRunnerView({
   const notAnsweredCount = questions.length - answeredCount
 
   // ---------------------------------------------------------------------------
-  // 6. SUBMITTED RESULTS SUMMARY
+  // 8. SUBMITTED RESULTS SUMMARY
   // ---------------------------------------------------------------------------
   if (isSubmitted) {
     let correctCount = 0
@@ -476,7 +581,6 @@ export default function TestRunnerView({
               </div>
             </div>
 
-            {/* Proctoring Summary Table */}
             {violations.length > 0 ? (
               <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-left text-xs space-y-2">
                 <div className="flex items-center justify-between font-bold text-amber-950">
@@ -529,7 +633,7 @@ export default function TestRunnerView({
   }
 
   // ---------------------------------------------------------------------------
-  // 7. ACTIVE RUNNER WORKSPACE (FULLSCREEN VIEWPORT TAKEOVER)
+  // 9. ACTIVE RUNNER WORKSPACE (FULLSCREEN VIEWPORT TAKEOVER)
   // ---------------------------------------------------------------------------
   const optionKeys = [
     { key: 'option_a' as const, label: 'A', value: CorrectAnswer.A, text: currentQ?.option_a },
@@ -819,12 +923,13 @@ export default function TestRunnerView({
                   })}
                 </div>
 
-                {/* Submit Final Button in Palette (Opens Popup) */}
+                {/* Submit Final Button in Palette (Opens Confirmation Modal) */}
                 <div className="pt-2">
                   <Button
                     type="button"
+                    disabled={isSubmitting}
                     onClick={() => setShowSubmitModal(true)}
-                    className="w-full h-10 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-xs cursor-pointer"
+                    className="w-full h-10 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-xs cursor-pointer disabled:opacity-50"
                   >
                     <Send className="h-3.5 w-3.5" />
                     <span>Submit Final Attempt</span>
@@ -835,7 +940,7 @@ export default function TestRunnerView({
           </div>
         </div>
 
-        {/* CONFIRMATION SUBMISSION MODAL (Resume vs. Yes, Submit) */}
+        {/* CONFIRMATION SUBMISSION MODAL */}
         <Dialog
           open={showSubmitModal}
           onOpenChange={(open) => {
@@ -893,8 +998,8 @@ export default function TestRunnerView({
                 type="button"
                 size="sm"
                 disabled={isSubmitting}
-                onClick={handleFinalSubmit}
-                className="rounded-lg text-[11px] h-8 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer disabled:opacity-50"
+                onClick={() => handleFinalSubmit(SubmissionType.MANUAL)}
+                className="rounded-lg text-[11px] h-8 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer disabled:opacity-50 min-w-[90px]"
               >
                 {isSubmitting ? (
                   <>
