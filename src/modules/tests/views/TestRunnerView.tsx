@@ -29,10 +29,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { CorrectAnswer } from '@/config/enums'
 import { useAttemptMutations } from '../api/useAttemptMutations'
+import { attemptService } from '../services/attemptService'
 import type { SingleAnswerDto, SaveProgressPayload, SubmitAttemptResponse } from '../types/attempt.types'
 import {
+  CorrectAnswer,
   AnswerOption,
   SubmissionType,
   ViolationType,
@@ -66,6 +67,38 @@ export interface TestRunnerProps {
     timeSpentSeconds: number
     violations: Array<{ type: ViolationType; timestamp: number; label: string }>
   }) => void
+}
+
+// ---------------------------------------------------------------------------
+// SHARED DELTA CALCULATION HELPER
+// ---------------------------------------------------------------------------
+function calculateAnswerDelta(
+  currentAnswers: Record<string, number>,
+  previouslySaved: Record<string, number>
+): SingleAnswerDto[] {
+  const delta: SingleAnswerDto[] = []
+
+  // Newly selected or modified options
+  for (const [question_id, selected_option] of Object.entries(currentAnswers)) {
+    if (previouslySaved[question_id] !== selected_option) {
+      delta.push({
+        question_id,
+        selected_option: selected_option as AnswerOption,
+      })
+    }
+  }
+
+  // Cleared responses
+  for (const previouslySavedId of Object.keys(previouslySaved)) {
+    if (currentAnswers[previouslySavedId] === undefined) {
+      delta.push({
+        question_id: previouslySavedId,
+        selected_option: null as any,
+      })
+    }
+  }
+
+  return delta
 }
 
 export default function TestRunnerView({
@@ -104,6 +137,7 @@ export default function TestRunnerView({
   const isSavingRef = useRef(false)
 
   const [submissionResult, setSubmissionResult] = useState<SubmitAttemptResponse | null>(null)
+  
   // Timer & Screen
   const [secondsRemaining, setSecondsRemaining] = useState(timerMinutes * 60)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -131,7 +165,6 @@ export default function TestRunnerView({
   // AUTO-SAVE DISPATCHER (DEADZONE + IN-FLIGHT MUTEX)
   // ---------------------------------------------------------------------------
   const triggerSaveProgress = useCallback(async () => {
-    // Hard stop if submitted, submitting, active in-flight save, or within final 10s deadzone
     if (
       isSubmittingRef.current ||
       isSubmitted ||
@@ -145,26 +178,7 @@ export default function TestRunnerView({
 
     const currentAnswers = answersRef.current
     const previouslySaved = savedAnswersRef.current
-
-    const changedAnswers: SingleAnswerDto[] = []
-
-    for (const [question_id, selected_option] of Object.entries(currentAnswers)) {
-      if (previouslySaved[question_id] !== selected_option) {
-        changedAnswers.push({
-          question_id,
-          selected_option: selected_option as AnswerOption,
-        })
-      }
-    }
-
-    for (const previouslySavedId of Object.keys(previouslySaved)) {
-      if (currentAnswers[previouslySavedId] === undefined) {
-        changedAnswers.push({
-          question_id: previouslySavedId,
-          selected_option: null as any,
-        })
-      }
-    }
+    const changedAnswers = calculateAnswerDelta(currentAnswers, previouslySaved)
 
     if (changedAnswers.length === 0) return
 
@@ -252,7 +266,7 @@ export default function TestRunnerView({
   )
 
   // ---------------------------------------------------------------------------
-  // 4. LISTENERS FOR ALL 6 VIOLATION TYPES
+  // 4. LISTENERS FOR VIOLATIONS
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (isSubmitted) return
@@ -327,17 +341,51 @@ export default function TestRunnerView({
   }, [isSubmitted, triggerViolation])
 
   // ---------------------------------------------------------------------------
+  // TAB / BROWSER CLOSE FLUSH (DISCONNECT ATTEMPT)
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const handleTabClose = () => {
+      if (isSubmittingRef.current || isSubmitted || isPreview || !attemptId) {
+        return
+      }
+
+      isSubmittingRef.current = true
+
+      const currentAnswers = answersRef.current
+      const previouslySaved = savedAnswersRef.current
+      const unsavedAnswers = calculateAnswerDelta(currentAnswers, previouslySaved)
+
+      // Call the service directly — DO NOT use useMutation / disconnectAttempt.mutate()
+      attemptService.disconnectAttempt({
+        attemptId,
+        payload: {
+          submitted_via: SubmissionType.DISCONNECTED,
+          answers: unsavedAnswers,
+        },
+      }).catch((err) => {
+        console.error('Failed to dispatch disconnect attempt:', err)
+      })
+    }
+
+    window.addEventListener('pagehide', handleTabClose)
+    window.addEventListener('beforeunload', handleTabClose)
+
+    return () => {
+      window.removeEventListener('pagehide', handleTabClose)
+      window.removeEventListener('beforeunload', handleTabClose)
+    }
+  }, [attemptId, isSubmitted, isPreview])
+  // ---------------------------------------------------------------------------
   // 5. SUBMIT HANDLER (DISARMS AUTO-SAVE & SUBMITS DELTA)
   // ---------------------------------------------------------------------------
   const handleFinalSubmit = useCallback(
     async (submissionType: SubmissionType = SubmissionType.MANUAL) => {
       if (isSubmittingRef.current || isSubmitted) return
 
-      // 🔒 Synchronous lock on line 1 prevents any further ticks or triggers
+      // Synchronous lock prevents duplicate execution
       isSubmittingRef.current = true
       setIsSubmitting(true)
 
-      //  Cancel the interval immediately
       if (autoSaveTimerRef.current) {
         clearInterval(autoSaveTimerRef.current)
         autoSaveTimerRef.current = null
@@ -361,30 +409,10 @@ export default function TestRunnerView({
 
       const currentAnswers = answersRef.current
       const previouslySaved = savedAnswersRef.current
-
-      // Calculate unsaved delta from recent seconds
-      const unsavedAnswers: SingleAnswerDto[] = []
-
-      for (const [question_id, selected_option] of Object.entries(currentAnswers)) {
-        if (previouslySaved[question_id] !== selected_option) {
-          unsavedAnswers.push({
-            question_id,
-            selected_option: selected_option as AnswerOption,
-          })
-        }
-      }
-
-      for (const previouslySavedId of Object.keys(previouslySaved)) {
-        if (currentAnswers[previouslySavedId] === undefined) {
-          unsavedAnswers.push({
-            question_id: previouslySavedId,
-            selected_option: null as any,
-          })
-        }
-      }
+      const unsavedAnswers = calculateAnswerDelta(currentAnswers, previouslySaved)
 
       try {
-      const response =   await submitAttempt.mutateAsync({
+        const response = await submitAttempt.mutateAsync({
           attemptId,
           payload: {
             submitted_via: submissionType,
@@ -513,7 +541,6 @@ export default function TestRunnerView({
   // 8. SUBMITTED RESULTS SUMMARY
   // ---------------------------------------------------------------------------
   if (isSubmitted) {
-
     return (
       <div className="fixed inset-0 z-50 bg-slate-50 overflow-y-auto p-4 sm:p-6 select-none">
         <div className="max-w-3xl mx-auto space-y-6 py-6">
@@ -536,7 +563,7 @@ export default function TestRunnerView({
                   <Award className="h-3.5 w-3.5 text-indigo-500" /> Score
                 </span>
                 <p className="text-lg font-bold text-indigo-600">
-                  {submissionResult?.score.toFixed(2)} / {submissionResult?.totalMarks}
+                  {submissionResult?.score?.toFixed(2) ?? '0.00'} / {submissionResult?.totalMarks ?? (questions.length * positiveMarks)}
                 </p>
               </div>
 
@@ -545,7 +572,7 @@ export default function TestRunnerView({
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Correct
                 </span>
                 <p className="text-lg font-bold text-emerald-600">
-                  {submissionResult?.correctAnswer} <span className="text-xs font-normal text-slate-400">Qs</span>
+                  {submissionResult?.correctAnswer ?? 0} <span className="text-xs font-normal text-slate-400">Qs</span>
                 </p>
               </div>
 
@@ -554,7 +581,7 @@ export default function TestRunnerView({
                   <XCircle className="h-3.5 w-3.5 text-rose-500" /> Incorrect
                 </span>
                 <p className="text-lg font-bold text-rose-600">
-                  {submissionResult?.wrongAnswer} <span className="text-xs font-normal text-slate-400">Qs</span>
+                  {submissionResult?.wrongAnswer ?? 0} <span className="text-xs font-normal text-slate-400">Qs</span>
                 </p>
               </div>
 
@@ -563,7 +590,7 @@ export default function TestRunnerView({
                   <HelpCircle className="h-3.5 w-3.5 text-amber-500" /> Unattempted
                 </span>
                 <p className="text-lg font-bold text-slate-700">
-                  {submissionResult?.unattemptedAnswer} <span className="text-xs font-normal text-slate-400">Qs</span>
+                  {submissionResult?.unattemptedAnswer ?? 0} <span className="text-xs font-normal text-slate-400">Qs</span>
                 </p>
               </div>
             </div>
@@ -910,7 +937,7 @@ export default function TestRunnerView({
                   })}
                 </div>
 
-                {/* Submit Final Button in Palette (Opens Confirmation Modal) */}
+                {/* Submit Final Button in Palette */}
                 <div className="pt-2">
                   <Button
                     type="button"
@@ -968,7 +995,7 @@ export default function TestRunnerView({
               </div>
             </div>
 
-            {/* Compact Action Buttons */}
+            {/* Actions */}
             <DialogFooter className="pt-2 flex flex-row items-center justify-end gap-2">
               <Button
                 type="button"
