@@ -73,6 +73,11 @@ export interface SubmitAttemptPayload{
 export interface SubmitAttemptResponse{
   success: boolean,
   score: number,
+  totalQuestion:number,
+  totalMarks:number,
+  correctAnswer:number,
+  wrongAnswer:number,
+  unattemptedAnswer:number,
   submitted_via: number,
   message: string,
 }

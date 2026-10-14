@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/dialog'
 import { CorrectAnswer } from '@/config/enums'
 import { useAttemptMutations } from '../api/useAttemptMutations'
-import type { SingleAnswerDto, SaveProgressPayload } from '../types/attempt.types'
+import type { SingleAnswerDto, SaveProgressPayload, SubmitAttemptResponse } from '../types/attempt.types'
 import {
   AnswerOption,
   SubmissionType,
@@ -103,6 +103,7 @@ export default function TestRunnerView({
   const isSubmittingRef = useRef(false)
   const isSavingRef = useRef(false)
 
+  const [submissionResult, setSubmissionResult] = useState<SubmitAttemptResponse | null>(null)
   // Timer & Screen
   const [secondsRemaining, setSecondsRemaining] = useState(timerMinutes * 60)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -383,13 +384,17 @@ export default function TestRunnerView({
       }
 
       try {
-        await submitAttempt.mutateAsync({
+      const response =   await submitAttempt.mutateAsync({
           attemptId,
           payload: {
             submitted_via: submissionType,
             answers: unsavedAnswers.length > 0 ? unsavedAnswers : undefined,
           },
         })
+
+        if (response?.data) {
+          setSubmissionResult(response.data)
+        }
 
         setShowSubmitModal(false)
         setIsSubmitted(true)
@@ -508,24 +513,6 @@ export default function TestRunnerView({
   // 8. SUBMITTED RESULTS SUMMARY
   // ---------------------------------------------------------------------------
   if (isSubmitted) {
-    let correctCount = 0
-    let incorrectCount = 0
-
-    questions.forEach((q) => {
-      const selected = answers[q.id]
-      if (selected !== undefined) {
-        if (selected === q.correct_answer) {
-          correctCount++
-        } else {
-          incorrectCount++
-        }
-      }
-    })
-
-    const unattemptedCount = questions.length - (correctCount + incorrectCount)
-    const penaltyPerWrong = isNegativeMarking ? negativeMarks : 0
-    const rawScore = correctCount * positiveMarks - incorrectCount * penaltyPerWrong
-    const totalMaxScore = questions.length * positiveMarks
 
     return (
       <div className="fixed inset-0 z-50 bg-slate-50 overflow-y-auto p-4 sm:p-6 select-none">
@@ -549,7 +536,7 @@ export default function TestRunnerView({
                   <Award className="h-3.5 w-3.5 text-indigo-500" /> Score
                 </span>
                 <p className="text-lg font-bold text-indigo-600">
-                  {rawScore.toFixed(2)} / {totalMaxScore}
+                  {submissionResult?.score.toFixed(2)} / {submissionResult?.totalMarks}
                 </p>
               </div>
 
@@ -558,7 +545,7 @@ export default function TestRunnerView({
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Correct
                 </span>
                 <p className="text-lg font-bold text-emerald-600">
-                  {correctCount} <span className="text-xs font-normal text-slate-400">Qs</span>
+                  {submissionResult?.correctAnswer} <span className="text-xs font-normal text-slate-400">Qs</span>
                 </p>
               </div>
 
@@ -567,7 +554,7 @@ export default function TestRunnerView({
                   <XCircle className="h-3.5 w-3.5 text-rose-500" /> Incorrect
                 </span>
                 <p className="text-lg font-bold text-rose-600">
-                  {incorrectCount} <span className="text-xs font-normal text-slate-400">Qs</span>
+                  {submissionResult?.wrongAnswer} <span className="text-xs font-normal text-slate-400">Qs</span>
                 </p>
               </div>
 
@@ -576,7 +563,7 @@ export default function TestRunnerView({
                   <HelpCircle className="h-3.5 w-3.5 text-amber-500" /> Unattempted
                 </span>
                 <p className="text-lg font-bold text-slate-700">
-                  {unattemptedCount} <span className="text-xs font-normal text-slate-400">Qs</span>
+                  {submissionResult?.unattemptedAnswer} <span className="text-xs font-normal text-slate-400">Qs</span>
                 </p>
               </div>
             </div>
