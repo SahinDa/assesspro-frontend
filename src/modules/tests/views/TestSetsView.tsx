@@ -238,9 +238,12 @@ export default function TestSetsView({
       <TestRunnerView
         attemptId={sessionData.attempt_id}
         questions={sessionData.testsetDetails?.questions || []}
-        timerMinutes={sessionData.timer_minutes || sessionData.testsetDetails?.timer_minutes || 30}
+        timerMinutes={sessionData.timer_minutes || sessionData.testsetDetails?.timer_minutes}
         testName={displayName}
         setName={sessionData.testsetDetails?.name}
+        positiveMarks ={sessionData?.testsetDetails?.positive_marking_value}
+        isNegativeMarking = {sessionData?.testsetDetails?.is_negative_marking}
+        negativeMarks = {sessionData?.testsetDetails?.negative_score_value}
         onExit={() => setSessionData(null)}
       />
     )
