@@ -36,12 +36,43 @@ export const attemptService  = {
         );
         return res.data;
       },
-    disconnectAttempt : async ({attemptId,payload }:DisconnectAttemptPayload): Promise<ApiResponse<DisconnectAttemptResponse>> => {
-        const res = await apiClient.post<ApiResponse<DisconnectAttemptResponse>>(
-          TEST_ENDPOINTS.DISCONNECT_ATTEMPT(attemptId),
-          payload
-        );
-        return res.data;
+      disconnectAttempt: async ({
+        attemptId,
+        payload,
+      }: DisconnectAttemptPayload): Promise<ApiResponse<DisconnectAttemptResponse>> => {
+        const endpoint = TEST_ENDPOINTS.DISCONNECT_ATTEMPT(attemptId)
+      
+        const baseUrl = ENV.API_BASE_URL.replace(/\/+$/, '')
+        const cleanEndpoint = endpoint.replace(/^\/+/, '')
+        const fullUrl = `${baseUrl}/${cleanEndpoint}`
+      
+        try {
+          const res = await fetch(fullUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+            credentials: 'include',
+            keepalive: true,
+          })
+      
+          const data = await res.json()
+      
+          if (!res.ok) {
+            console.error('[DISCONNECT FETCH ERROR RESPONSE]:', data)
+            throw new Error(data?.message || `Disconnect failed with status ${res.status}`)
+          }
+      
+          return data
+        } catch (err) {
+          console.warn('[DISCONNECT FETCH FAILED - FALLBACK TO AXIOS]:', err)
+          const res = await apiClient.post<ApiResponse<DisconnectAttemptResponse>>(
+            endpoint,
+            payload
+          )
+          return res.data
+        }
       },
     recordViolation : async ({attemptId,payload}: RecordViolationPayload): Promise<ApiResponse<RecordViolationResponse>> => {
         const res = await apiClient.post<ApiResponse<RecordViolationResponse>>(
