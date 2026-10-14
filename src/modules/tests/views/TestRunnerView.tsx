@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/dialog'
 import { CorrectAnswer } from '@/config/enums'
 import { useAttemptMutations } from '../api/useAttemptMutations'
-import type { SingleAnswerDto,SaveProgressPayload , StartAttemptResponseData } from '../types/attempt.types'
+import type { SingleAnswerDto, SaveProgressPayload } from '../types/attempt.types'
 import {
   AnswerOption,
   SubmissionType,
@@ -68,7 +68,6 @@ export interface TestRunnerProps {
   }) => void
 }
 
-
 export default function TestRunnerView({
   attemptId,
   questions: initialQuestions = [],
@@ -82,8 +81,7 @@ export default function TestRunnerView({
   onExit,
   onSubmitAttempt,
 }: TestRunnerProps) {
-
-  const [questions, setQuestions] = useState<RunnerQuestion[]>(() =>
+  const [questions] = useState<RunnerQuestion[]>(() =>
     (initialQuestions || []).map((q: any) => ({
       id: q.question_id || q.id,
       question_text: q.question_text,
@@ -100,9 +98,9 @@ export default function TestRunnerView({
   const [visitedQuestions, setVisitedQuestions] = useState<Record<string, boolean>>({})
 
   const { saveProgress } = useAttemptMutations()
- 
 
-  
+  const [isSubmitting] = useState(false)
+
   // Timer & Screen
   const [secondsRemaining, setSecondsRemaining] = useState(timerMinutes * 60)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -151,12 +149,11 @@ export default function TestRunnerView({
       if (currentAnswers[previouslySavedId] === undefined) {
         changedAnswers.push({
           question_id: previouslySavedId,
-          selected_option: null, // 👈 Dispatches deletion to backend
+          selected_option: null,
         })
       }
     }
 
-    // If nothing was added, modified, or cleared, skip network sync
     if (changedAnswers.length === 0) return
 
     const payload: SaveProgressPayload = {
@@ -168,12 +165,12 @@ export default function TestRunnerView({
 
     try {
       await saveProgress.mutateAsync(payload)
-      // On success, update the saved cache to match current selections
       savedAnswersRef.current = { ...currentAnswers }
     } catch (err) {
       console.error('Failed to auto-save test progress:', err)
     }
   }, [attemptId, isSubmitted, isPreview, saveProgress])
+
   // ---------------------------------------------------------------------------
   // 1. AUTO FULLSCREEN REQUEST ON START
   // ---------------------------------------------------------------------------
@@ -329,32 +326,31 @@ export default function TestRunnerView({
     return () => clearInterval(timer)
   }, [isSubmitted])
 
+  const triggerSaveRef = useRef(triggerSaveProgress)
+  useEffect(() => {
+    triggerSaveRef.current = triggerSaveProgress
+  }, [triggerSaveProgress])
 
-const triggerSaveRef = useRef(triggerSaveProgress)
-useEffect(() => {
-  triggerSaveRef.current = triggerSaveProgress
-}, [triggerSaveProgress])
+  useEffect(() => {
+    if (isSubmitted || isPreview || !attemptId) return
 
-useEffect(() => {
-  if (isSubmitted || isPreview || !attemptId) return
+    const intervalId = setInterval(() => {
+      triggerSaveRef.current()
+    }, 60 * 1000)
 
-  const intervalId = setInterval(() => {
-    triggerSaveRef.current()
-  }, 60 * 1000)
-
-  return () => clearInterval(intervalId)
-}, [isSubmitted, isPreview,attemptId])
+    return () => clearInterval(intervalId)
+  }, [isSubmitted, isPreview, attemptId])
 
   const handleFinalSubmit = () => {
     setShowSubmitModal(false)
     setIsSubmitted(true)
 
     if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => { })
+      document.exitFullscreen().catch(() => {})
     }
 
     const payload = {
-      answers,
+      answers: answersRef.current,
       timeSpentSeconds: totalSecondsRef.current - secondsRemaining,
       violations,
     }
@@ -403,9 +399,8 @@ useEffect(() => {
   const notVisitedCount = questions.filter((q) => !visitedQuestions[q.id]).length
   const notAnsweredCount = questions.length - answeredCount
 
-
   // ---------------------------------------------------------------------------
-  // 7. SUBMITTED RESULTS SUMMARY
+  // 6. SUBMITTED RESULTS SUMMARY
   // ---------------------------------------------------------------------------
   if (isSubmitted) {
     let correctCount = 0
@@ -534,7 +529,7 @@ useEffect(() => {
   }
 
   // ---------------------------------------------------------------------------
-  // 8. ACTIVE RUNNER WORKSPACE (FULLSCREEN VIEWPORT TAKEOVER)
+  // 7. ACTIVE RUNNER WORKSPACE (FULLSCREEN VIEWPORT TAKEOVER)
   // ---------------------------------------------------------------------------
   const optionKeys = [
     { key: 'option_a' as const, label: 'A', value: CorrectAnswer.A, text: currentQ?.option_a },
@@ -564,7 +559,7 @@ useEffect(() => {
           </div>
         )}
 
-        {/* TOP HEADER (No submit button here) */}
+        {/* TOP HEADER */}
         <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:px-5 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-3">
             <Button
@@ -597,10 +592,11 @@ useEffect(() => {
           {/* TIMER & CONTROLS */}
           <div className="flex items-center gap-3">
             <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold font-mono tracking-wider ${secondsRemaining < 300
-                ? 'bg-rose-50 border-rose-200 text-rose-600 animate-pulse'
-                : 'bg-indigo-50/70 border-indigo-100 text-indigo-700'
-                }`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold font-mono tracking-wider ${
+                secondsRemaining < 300
+                  ? 'bg-rose-50 border-rose-200 text-rose-600 animate-pulse'
+                  : 'bg-indigo-50/70 border-indigo-100 text-indigo-700'
+              }`}
             >
               <Clock className="h-4 w-4" />
               <span>{formatTimer(secondsRemaining)}</span>
@@ -672,10 +668,11 @@ useEffect(() => {
                     variant="ghost"
                     size="sm"
                     onClick={() => currentQ && handleToggleReview(currentQ.id)}
-                    className={`h-8 px-2.5 text-xs font-semibold rounded-xl gap-1.5 cursor-pointer ${currentQ && markedForReview[currentQ.id]
-                      ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                      : 'text-slate-500 hover:bg-slate-100'
-                      }`}
+                    className={`h-8 px-2.5 text-xs font-semibold rounded-xl gap-1.5 cursor-pointer ${
+                      currentQ && markedForReview[currentQ.id]
+                        ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                        : 'text-slate-500 hover:bg-slate-100'
+                    }`}
                   >
                     <Bookmark className="h-3.5 w-3.5" />
                     <span>
@@ -698,16 +695,18 @@ useEffect(() => {
                       <div
                         key={opt.key}
                         onClick={() => currentQ && handleSelectOption(currentQ.id, opt.value)}
-                        className={`flex items-center gap-3 p-3 rounded-2xl border text-xs font-medium cursor-pointer transition-all ${isSelected
-                          ? 'border-indigo-600 bg-indigo-50/40 text-indigo-950 ring-1 ring-indigo-500/40'
-                          : 'border-slate-200/90 bg-white hover:bg-slate-50/80 text-slate-800'
-                          }`}
+                        className={`flex items-center gap-3 p-3 rounded-2xl border text-xs font-medium cursor-pointer transition-all ${
+                          isSelected
+                            ? 'border-indigo-600 bg-indigo-50/40 text-indigo-950 ring-1 ring-indigo-500/40'
+                            : 'border-slate-200/90 bg-white hover:bg-slate-50/80 text-slate-800'
+                        }`}
                       >
                         <div
-                          className={`h-6 w-6 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 transition-colors ${isSelected
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-slate-100 text-slate-600'
-                            }`}
+                          className={`h-6 w-6 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 transition-colors ${
+                            isSelected
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-slate-100 text-slate-600'
+                          }`}
                         >
                           {opt.label}
                         </div>
@@ -810,8 +809,9 @@ useEffect(() => {
                         key={q.id}
                         type="button"
                         onClick={() => navigateTo(idx)}
-                        className={`h-9 w-full rounded-xl text-xs flex items-center justify-center border transition-all cursor-pointer ${tileClass} ${isCurrent ? 'ring-2 ring-indigo-600 ring-offset-2 scale-105' : ''
-                          }`}
+                        className={`h-9 w-full rounded-xl text-xs flex items-center justify-center border transition-all cursor-pointer ${tileClass} ${
+                          isCurrent ? 'ring-2 ring-indigo-600 ring-offset-2 scale-105' : ''
+                        }`}
                       >
                         {idx + 1}
                       </button>
@@ -819,7 +819,7 @@ useEffect(() => {
                   })}
                 </div>
 
-                {/* Submit Final Button in Palette */}
+                {/* Submit Final Button in Palette (Opens Popup) */}
                 <div className="pt-2">
                   <Button
                     type="button"
@@ -835,54 +835,75 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* CONFIRMATION SUBMISSION DIALOG */}
-        <Dialog open={showSubmitModal} onOpenChange={setShowSubmitModal}>
-          <DialogContent className="sm:max-w-[420px] rounded-3xl bg-white p-6 shadow-xl border-slate-200">
-            <DialogHeader className="space-y-1 text-center sm:text-left">
-              <DialogTitle className="text-base font-bold text-slate-900">
+        {/* CONFIRMATION SUBMISSION MODAL (Resume vs. Yes, Submit) */}
+        <Dialog
+          open={showSubmitModal}
+          onOpenChange={(open) => {
+            if (!isSubmitting) setShowSubmitModal(open)
+          }}
+        >
+          <DialogContent className="sm:max-w-[400px] rounded-2xl bg-white p-5 shadow-xl border-slate-200 select-none">
+            <DialogHeader className="space-y-1 text-left">
+              <DialogTitle className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
                 Submit Test Attempt?
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Review your attempt status before confirming final submission.
+                Review your attempt summary before confirming submission.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="grid grid-cols-2 gap-2.5 py-3 text-xs">
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70">
-                <span className="text-slate-500 block">Total Questions</span>
+            {/* Live Attempt Breakdown */}
+            <div className="grid grid-cols-2 gap-2 py-3 text-xs">
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70">
+                <span className="text-slate-500 text-[10px] font-medium block">Total Questions</span>
                 <strong className="text-slate-900 font-bold text-sm">{questions.length}</strong>
               </div>
-              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200/70">
-                <span className="text-emerald-700 block">Answered</span>
+
+              <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/70">
+                <span className="text-emerald-700 text-[10px] font-medium block">Answered</span>
                 <strong className="text-emerald-800 font-bold text-sm">{answeredCount}</strong>
               </div>
-              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/70">
-                <span className="text-amber-700 block">Unanswered</span>
+
+              <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200/70">
+                <span className="text-amber-700 text-[10px] font-medium block">Unanswered</span>
                 <strong className="text-amber-800 font-bold text-sm">{notAnsweredCount}</strong>
               </div>
-              <div className="p-3 rounded-xl bg-purple-50 border border-purple-200/70">
-                <span className="text-purple-700 block">Marked for Review</span>
+
+              <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-200/70">
+                <span className="text-purple-700 text-[10px] font-medium block">Marked for Review</span>
                 <strong className="text-purple-800 font-bold text-sm">{reviewCount}</strong>
               </div>
             </div>
 
-            <DialogFooter className="pt-2 gap-2">
+            {/* Compact Action Buttons */}
+            <DialogFooter className="pt-2 flex flex-row items-center justify-end gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
+                disabled={isSubmitting}
                 onClick={() => setShowSubmitModal(false)}
-                className="rounded-xl text-xs"
+                className="rounded-lg text-[11px] h-8 px-3 cursor-pointer border-slate-200 text-slate-600 hover:bg-slate-100"
               >
                 Resume Test
               </Button>
+
               <Button
                 type="button"
                 size="sm"
+                disabled={isSubmitting}
                 onClick={handleFinalSubmit}
-                className="rounded-xl text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                className="rounded-lg text-[11px] h-8 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer disabled:opacity-50"
               >
-                Yes, Submit
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Yes, Submit'
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
