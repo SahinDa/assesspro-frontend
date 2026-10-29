@@ -1,6 +1,6 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { historyService } from '../services/attemptHistoryService';
-import { historyKeys } from './attemptHistoryKeys';
+import { historyService } from '../services/historyService';
+import { historyKeys } from './history.keys';
 import { useActiveOrgId } from '@/hooks/useActiveOrgId';
 import type {
   GetAttemptHistoryQueryParams,

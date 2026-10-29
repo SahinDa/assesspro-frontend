@@ -56,10 +56,10 @@ import {
   }
   
   export interface QuestionOptions {
-    option_1: string;
-    option_2: string;
-    option_3: string;
-    option_4: string;
+    option_a: string;
+    option_b: string;
+    option_c: string;
+    option_d: string;
   }
   
   export interface QuestionReviewItem {
