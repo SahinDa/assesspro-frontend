@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   ArrowLeft,
   CheckCircle2,
@@ -13,21 +13,69 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { AttemptSummaryItem, QuestionBreakdown } from '../utils/attemptValidation'
+import { useAttemptDetails } from '../api/useHistoryQueries'
 
 interface AttemptReviewSheetProps {
   attempt: AttemptSummaryItem
-  questions: QuestionBreakdown[]
   isOrg: boolean
   onBack: () => void
 }
 
 export default function AttemptReviewSheet({
   attempt,
-  questions,
   isOrg,
   onBack,
 }: AttemptReviewSheetProps) {
+
+  const { data: detailsResponse, isLoading, isError } = useAttemptDetails(attempt.attempt_id)
+  const questions: QuestionBreakdown[] = useMemo(() => {
+    const list = detailsResponse?.questions ?? []
+    return list.map((q: any) => ({
+      question_id: q.question_id,
+      question_text: q.question_text,
+      option_a: q.options?.option_a ?? '',
+      option_b: q.options?.option_b ?? '',
+      option_c: q.options?.option_c ?? '',
+      option_d: q.options?.option_d ?? '',
+      selected_option: q.selected_option,
+      correct_answer: q.correct_answer,
+      is_correct: Boolean(
+        q.is_correct_status === 1 ||
+        q.is_correct_status === 'CORRECT' ||
+        q.is_correct_status === true
+      ),
+      marks_awarded: q.marks_awarded ?? 0,
+      time_spent_seconds: q.time_spent_seconds ?? 0,
+    }))
+  }, [detailsResponse])
+
+
   const [currentIndex, setCurrentIndex] = useState(0)
+  
+  if (isLoading) {
+    return (
+      <div className="max-w-5xl mx-auto py-24 text-center space-y-3">
+        <div className="h-8 w-8 mx-auto animate-spin rounded-full border-2 border-slate-300 border-t-indigo-600" />
+        <p className="text-xs font-semibold text-slate-500 animate-pulse">
+          Loading question review breakdown...
+        </p>
+      </div>
+    )
+  }
+
+  if (isError || questions.length === 0) {
+    return (
+      <div className="max-w-5xl mx-auto py-16 text-center space-y-4">
+        <p className="text-sm font-medium text-rose-600">
+          {isError ? 'Failed to load details for this attempt.' : 'No questions found for this attempt.'}
+        </p>
+        <Button variant="outline" size="sm" onClick={onBack}>
+          Back to attempts
+        </Button>
+      </div>
+    )
+  }
+
   const currentQ = questions[currentIndex]
 
   const correctCount = questions.filter((q) => q.is_correct).length
