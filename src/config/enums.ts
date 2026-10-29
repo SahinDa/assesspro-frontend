@@ -228,3 +228,10 @@ export const VIOLATION_TITLES: Record<ViolationType, string> = {
   [ViolationType.CLIPBOARD_PASTE]: 'Clipboard Paste Disabled',
   [ViolationType.DEV_TOOLS]: 'Developer Tools Access Attempt',
 };
+
+export enum AttemptSortBy {
+  LATEST = 'latest',
+  OLDEST = 'oldest',
+  TOP_SCORE = 'top_score',
+  LOWEST_SCORE = 'lowest_score',
+}
