@@ -8,7 +8,7 @@ import type {
   GetAttemptDetailsResponse,
 } from '../types/history.types';
 
-export const attemptHistoryService = {
+export const historyService = {
   getHistory: async (
     params?: GetAttemptHistoryQueryParams,
   ): Promise<ApiResponse<GetAttemptHistoryResponse>> => {
