@@ -16,6 +16,13 @@ interface TestOption {
 
 export type SortOrder = 'date_desc' | 'date_asc' | 'score_desc' | 'score_asc'
 
+const SORT_LABELS: Record<SortOrder, string> = {
+  date_desc: 'Latest First',
+  date_asc: 'Oldest First',
+  score_desc: 'Highest Score',
+  score_asc: 'Lowest Score',
+}
+
 interface AttemptFilterBarProps {
   tests: TestOption[]
   selectedTestId: string
@@ -39,17 +46,6 @@ export default function AttemptFilterBar({
 }: AttemptFilterBarProps) {
   const isSpecificTestSelected = selectedTestId !== 'ALL'
 
-  // Resolve human-readable labels from current IDs
-  const currentTestLabel =
-    selectedTestId === 'ALL'
-      ? 'All Tests'
-      : tests.find((t) => t.id === selectedTestId)?.title ?? 'All Tests'
-
-  const currentSetLabel =
-    selectedSetId === 'ALL'
-      ? 'All Test Sets'
-      : availableSets.find((s) => s.id === selectedSetId)?.name ?? 'All Test Sets'
-
   return (
     <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-xs">
       <CardContent className="p-3.5">
@@ -65,9 +61,7 @@ export default function AttemptFilterBar({
             {/* 1. Parent Test Dropdown */}
             <Select value={selectedTestId} onValueChange={onTestChange}>
               <SelectTrigger className="w-[210px] h-8 text-xs rounded-xl border-slate-200 bg-slate-50/50">
-                <SelectValue placeholder="All Tests">
-                  <span className="truncate">{currentTestLabel}</span>
-                </SelectValue>
+                <SelectValue placeholder="All Tests" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">All Tests</SelectItem>
@@ -79,13 +73,11 @@ export default function AttemptFilterBar({
               </SelectContent>
             </Select>
 
-            {/* 2. Test Set Dropdown (Appears only when a specific Test is chosen) */}
+            {/* 2. Test Set Dropdown */}
             {isSpecificTestSelected && (
               <Select value={selectedSetId} onValueChange={onSetChange}>
                 <SelectTrigger className="w-[210px] h-8 text-xs rounded-xl border-slate-200 bg-indigo-50/40 text-slate-900 animate-in fade-in zoom-in-95 duration-150">
-                  <SelectValue placeholder="All Test Sets">
-                    <span className="truncate">{currentSetLabel}</span>
-                  </SelectValue>
+                  <SelectValue placeholder="All Test Sets" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">All Test Sets</SelectItem>
@@ -105,11 +97,9 @@ export default function AttemptFilterBar({
               Sort by:
             </span>
             <Select value={sortOrder} onValueChange={(v) => onSortChange(v as SortOrder)}>
-              <SelectTrigger className="w-[150px] h-8 text-xs rounded-xl border-slate-200 bg-white">
-                <div className="flex items-center gap-1.5 truncate">
-                  <ArrowUpDown className="h-3 w-3 text-slate-400 shrink-0" />
-                  <SelectValue />
-                </div>
+              <SelectTrigger className="w-[160px] h-8 text-xs rounded-xl border-slate-200 bg-white flex items-center gap-1.5">
+                <ArrowUpDown className="h-3 w-3 text-slate-400 shrink-0" />
+                <SelectValue>{SORT_LABELS[sortOrder]}</SelectValue>
               </SelectTrigger>
               <SelectContent align="end">
                 <SelectItem value="date_desc">Latest First</SelectItem>
