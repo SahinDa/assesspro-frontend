@@ -1,8 +1,8 @@
-export const ATTEMPT_ENDPOINTS = {
+export const HISTORY_ENDPOINTS = {
     // ===============================
     // Attempt History & Details
     // Base controller prefix: /attempts
     // ===============================
     HISTORY: '/attempts/history',
-    DETAILS: (attemptId: string) => `/attempts/${attemptId}/details`,
+    DETAILS: `/attempts/details`,
   } as const;
