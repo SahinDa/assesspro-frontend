@@ -9,6 +9,7 @@ export interface GetBookmarksQueryParams {
   offset?: number;
   isOrgBookmark?: boolean;
   orgId?: string; // Target organization ID
+  itemType?: BookmarkType;
 }
 
 export interface ToggleBookmarkPayload {
