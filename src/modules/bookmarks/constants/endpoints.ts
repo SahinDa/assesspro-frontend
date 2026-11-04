@@ -5,4 +5,5 @@ export const BOOKMARK_ENDPOINTS = {
     // ===============================
     GET_ALL: '/bookmarks',
     TOGGLE: '/bookmarks',
+    COUNT : '/bookmarks/count'
   } as const;
