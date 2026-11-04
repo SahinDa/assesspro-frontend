@@ -1,4 +1,4 @@
-import { BookmarkType } from '@/config/enums';
+import { BookmarkType, BookmarkTarget } from '@/config/enums';
 
 // ==========================================
 // 1. Bookmark Query & Payload Interfaces
@@ -15,6 +15,7 @@ export interface GetBookmarksQueryParams {
 export interface ToggleBookmarkPayload {
   item_id: string;
   item_type: BookmarkType | number;
+  target_type?:  BookmarkTarget ;
 }
 
 export interface ToggleBookmarkQueryParams {
@@ -53,3 +54,20 @@ export interface ToggleBookmarkAddedResponse {
 export type ToggleBookmarkResponse =
   | ToggleBookmarkRemovedResponse
   | ToggleBookmarkAddedResponse;
+
+
+  export interface GetBookmarkCountParams {
+    /** Target organization UUID (required for students, optional for org admins) */
+    orgId?: string;
+  }
+
+  export interface BookmarkCountResponse {
+    /** Combined count: testCount + testSetCount */
+    allCount: number;
+    /** Total bookmarked tests (item_type = 1) */
+    testCount: number;
+    /** Total bookmarked test sets (item_type = 2) */
+    testSetCount: number;
+    /** Total organization-wide broadcast pins (user_id IS NULL) */
+    orgCount: number;
+  }

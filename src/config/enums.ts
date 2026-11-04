@@ -26,6 +26,11 @@ export const BookmarkType = {
   TEST_SET: 2,
 } as const;
 
+export enum BookmarkTarget {
+  ORGANIZATION = 1, // Org itself / Org-wide pin
+  STUDENT = 2,      // Specifically for a student
+}
+
 export type BookmarkTypeEnum = (typeof BookmarkType)[keyof typeof BookmarkType];
 
 export const OrganizationStatus = {
