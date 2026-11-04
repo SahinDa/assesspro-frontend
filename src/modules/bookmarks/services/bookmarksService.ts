@@ -7,6 +7,8 @@ import type {
   ToggleBookmarkQueryParams,
   GetBookmarksResponse,
   ToggleBookmarkResponse,
+  GetBookmarkCountParams,
+  BookmarkCountResponse,
 } from '../types/bookmark.types';
 
 export const bookmarksService = {
@@ -27,6 +29,15 @@ export const bookmarksService = {
     const res = await apiClient.post<ApiResponse<ToggleBookmarkResponse>>(
       BOOKMARK_ENDPOINTS.TOGGLE,
       payload,
+      { params },
+    );
+    return res.data;
+  },
+  bookmarkCount: async (
+    params?: GetBookmarkCountParams,
+  ): Promise<ApiResponse<BookmarkCountResponse>> => {
+    const res = await apiClient.get<ApiResponse<BookmarkCountResponse>>(
+      BOOKMARK_ENDPOINTS.COUNT,
       { params },
     );
     return res.data;
