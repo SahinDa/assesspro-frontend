@@ -11,6 +11,8 @@ import {
   ShieldAlert,
   Filter,
   Power,
+  Bookmark,
+  Users,
 } from 'lucide-react'
 import {
   Select,
@@ -33,11 +35,13 @@ import TestFormModal from '../components/TestFormModal'
 import DeleteTestDialog from '../components/DeleteTestDialog'
 import TestSetsView from './TestSetsView'
 import type { TestFormData } from '../utils/testValidation'
-import { UserRole, type UserRoleType, TestStatus } from '@/config/enums'
+import { UserRole, type UserRoleType, TestStatus, BookmarkType, BookmarkTarget } from '@/config/enums'
 import type { TestListItem } from '../types/test.types'
 import { useTestList, useTestCount } from '../api/useTestQueries'
 import { useTestMutations } from '../api/useTestMutations'
 import { useActiveOrgId } from '@/hooks/useActiveOrgId'
+import BookmarkToggleButton from "@/modules/bookmarks/components/BookmarkToggleButton";
+import { useToggleBookmarkMutation } from '@/modules/bookmarks/api/useToggleBookmarkMutation'
 
 export interface TestItem {
   id: string
@@ -45,6 +49,8 @@ export interface TestItem {
   description: string
   setsCount: number
   status: TestStatus
+  is_bookmarked?: boolean
+  is_student_bookmarked?: boolean
 }
 
 export interface TestsViewProps {
@@ -89,6 +95,18 @@ export default function TestsView({
 
   // Mutations
   const { createTest, updateTest, deleteTest, toggleStatus } = useTestMutations()
+  const { mutate: toggleBookmark, isPending: isBookmarkPending, variables: pendingBookmarkVars } =
+    useToggleBookmarkMutation()
+
+  const handleToggleBookmark = (test: TestItem, target?: BookmarkTarget) => {
+    toggleBookmark({
+      item_id: test.id,
+      item_type: BookmarkType.TEST,
+      // For Student: target_type is omitted
+      // For Organization: uses passed target or defaults to BookmarkTarget.ORGANIZATION
+      ...(!isStudent && { target_type: target ?? BookmarkTarget.ORGANIZATION }),
+    })
+  }
 
   // Map server items to component's existing TestItem structure so zero UI code changes
   const tests: TestItem[] = rawTests.map((t) => ({
@@ -97,6 +115,8 @@ export default function TestsView({
     description: t.description || '',
     setsCount: t.total_set ?? 0,
     status: t.status,
+    is_bookmarked: Boolean(t.is_bookmarked),
+    is_student_bookmarked: Boolean(t.is_student_bookmarked),
   }))
 
 
@@ -285,16 +305,89 @@ export default function TestsView({
                         <Layers className="h-3 w-3" />
                         <span>{test.setsCount} {test.setsCount === 1 ? 'Set' : 'Sets'}</span>
                       </Badge>
+                      {isStudent && test.is_student_bookmarked && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-semibold gap-1 py-0.5"
+                        >
+                          <Bookmark className="h-3 w-3 fill-amber-500 text-amber-500" /> Curated
+                        </Badge>
+                      )}
                     </div>
 
                     {/* 3-Dot menu: ONLY Organization Authors, hidden in read-only audit and student */}
-                    {isOrgAuthor && (
+                    {isStudent && (
                       <div onClick={(e) => e.stopPropagation()}>
+                        <BookmarkToggleButton
+                          isBookmarked={test.is_bookmarked}
+                          isLoading={isBookmarkPending && (pendingBookmarkVars as any)?.item_id === test.id}
+                          onToggle={() => handleToggleBookmark(test)}
+                        />
+                      </div>
+                    )}
+                    {isOrgAuthor && (
+
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        {/* Visual indicator when ANY bookmark is active */}
+                        {(test.is_bookmarked || test.is_student_bookmarked) && (
+                          <div
+                            title={
+                              test.is_bookmarked && test.is_student_bookmarked
+                                ? 'Bookmarked for Org & Students'
+                                : test.is_bookmarked
+                                  ? 'Bookmarked for Org'
+                                  : 'Bookmarked for Students'
+                            }
+                            className="h-7 px-2 rounded-lg bg-amber-50 border border-amber-200 flex items-center gap-1 text-[11px] font-semibold text-amber-700"
+                          >
+                            <Bookmark className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+                            {test.is_bookmarked && test.is_student_bookmarked ? (
+                              <span>Org & Student</span>
+                            ) : test.is_bookmarked ? (
+                              <span>Org</span>
+                            ) : (
+                              <span>Student</span>
+                            )}
+                          </div>
+                        )}
                         <DropdownMenu>
                           <DropdownMenuTrigger className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer outline-none border-0 bg-transparent">
                             <MoreHorizontal className="h-4 w-4" />
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-36 rounded-xl p-1 shadow-lg border-slate-200 bg-white z-30">
+                          <DropdownMenuContent align="end" className="w-52 rounded-xl p-1 shadow-lg border-slate-200 bg-white z-30">
+                            {/* Bookmark for Organization */}
+                            {/* Bookmark for Organization */}
+                            <DropdownMenuItem
+                              disabled={test.status !== TestStatus.ACTIVE}
+                              onClick={() => test.status === TestStatus.ACTIVE && handleToggleBookmark(test, BookmarkTarget.ORGANIZATION)}
+                              className={`text-xs font-medium gap-2 rounded-lg py-2 ${test.status !== TestStatus.ACTIVE
+                                  ? 'opacity-40 cursor-not-allowed text-slate-400'
+                                  : 'cursor-pointer text-slate-700 hover:bg-slate-50'
+                                }`}
+                            >
+                              <Bookmark
+                                className={`h-3.5 w-3.5 ${test.is_bookmarked ? 'fill-indigo-600 text-indigo-600' : 'text-indigo-600'
+                                  }`}
+                              />
+                              <span>{test.is_bookmarked ? 'Remove Org Bookmark' : 'Bookmark for Organization'}</span>
+                            </DropdownMenuItem>
+
+                            {/* Bookmark for Students */}
+                            <DropdownMenuItem
+                              disabled={test.status !== TestStatus.ACTIVE}
+                              onClick={() => test.status === TestStatus.ACTIVE && handleToggleBookmark(test, BookmarkTarget.STUDENT)}
+                              className={`text-xs font-medium gap-2 rounded-lg py-2 ${test.status !== TestStatus.ACTIVE
+                                  ? 'opacity-40 cursor-not-allowed text-slate-400'
+                                  : 'cursor-pointer text-slate-700 hover:bg-slate-50'
+                                }`}
+                            >
+                              <Users
+                                className={`h-3.5 w-3.5 ${test.is_student_bookmarked ? 'fill-amber-500 text-amber-500' : 'text-amber-500'
+                                  }`}
+                              />
+                              <span>{test.is_student_bookmarked ? 'Remove Student Bookmark' : 'Bookmark for Students'}</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="my-1 bg-slate-100" />
                             <DropdownMenuItem
                               onClick={() => handleToggleStatus(test)}
                               className="text-xs font-medium gap-2 rounded-lg cursor-pointer py-2 text-slate-700 hover:bg-slate-50"

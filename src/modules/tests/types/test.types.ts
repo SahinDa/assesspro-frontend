@@ -43,6 +43,8 @@ export interface GetTestListQueryParams {
     description: string | null;
     total_set: number;
     status: TestStatus | number;
+    is_bookmarked?: boolean
+    is_student_bookmarked?: boolean
     created_at: string;
     updated_at: string;
   }  
