@@ -19,7 +19,7 @@ export function useToggleBookmarkMutation(adminOrgId?: string) {
     mutationFn: (payload: ToggleBookmarkPayload) =>
       bookmarksService.toggleBookmark(
         payload,
-        orgId ? { id: orgId } : undefined,
+        orgId ? { orgId: orgId } : undefined,
       ),
     onSuccess: () => {
       // Invalidate bookmark query lists so active lists update immediately

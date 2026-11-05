@@ -19,7 +19,7 @@ export interface ToggleBookmarkPayload {
 }
 
 export interface ToggleBookmarkQueryParams {
-  id?: string; // Optional target organization ID (used by students)
+  orgId?: string; // Optional target organization ID (used by students)
 }
 
 // ==========================================
