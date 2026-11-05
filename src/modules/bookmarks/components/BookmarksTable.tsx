@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Calendar, Trash2, ChevronLeft, ChevronRight, Bookmark, ExternalLink, FileText, Layers } from 'lucide-react'
+import { Calendar, Trash2, Bookmark, ExternalLink, FileText, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
@@ -28,19 +27,6 @@ export default function BookmarksTable({
   onRemove: (bookmark: any) => void
   formatDate: (iso: string) => string
 }) {
-  const [currentPage, setCurrentPage] = useState(1)
-  const pageSize = 10
-  const totalPages = Math.max(1, Math.ceil(bookmarks.length / pageSize))
-
-  // Reset to page 1 whenever filtered results or tab changes
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [bookmarks.length])
-
-  const paginatedBookmarks = bookmarks.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  )
 
   const getItemUrl = (bm: any) => {
     return bm.item_type === 1
@@ -70,7 +56,7 @@ export default function BookmarksTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-            {paginatedBookmarks.map((bm) => {
+            {bookmarks.map((bm) => {
               const meta = TYPE_CONFIG[bm.item_type] || {
                 label: 'Resource',
                 icon: Bookmark,
@@ -143,37 +129,6 @@ export default function BookmarksTable({
         </table>
       </div>
 
-      {/* Pagination Controls */}
-      {bookmarks.length > pageSize && (
-        <div className="p-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-          <span>
-            Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, bookmarks.length)} of {bookmarks.length}
-          </span>
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="h-7 w-7 p-0 rounded-lg cursor-pointer"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </Button>
-            <span className="text-xs font-semibold text-slate-700 px-2">
-              {currentPage} / {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              className="h-7 w-7 p-0 rounded-lg cursor-pointer"
-            >
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
