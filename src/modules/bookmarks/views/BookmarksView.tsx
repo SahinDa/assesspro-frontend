@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Bookmark,
@@ -22,6 +22,12 @@ export default function BookmarksView() {
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get('tab') || 'all'
 
+
+  const page = Math.max(1, Number(searchParams.get('page')) || 1)
+  const limit = Math.max(1, Number(searchParams.get('limit')) || 10)
+  const offset = (page - 1) * limit;
+
+
   const itemTypeFilter =
     activeTab === 'tests'
       ? BookmarkType.TEST
@@ -34,8 +40,8 @@ export default function BookmarksView() {
     isLoading,
     isError,
   } = useBookmarkQueries({
-    limit: 100,
-    offset: 0,
+    limit,
+    offset,
     isOrgBookmark: false,
     itemType: itemTypeFilter,
   })
@@ -43,13 +49,34 @@ export default function BookmarksView() {
 
 
   const bookmarks = Array.isArray(bookmarksData)
-  ? bookmarksData
-  : bookmarksData?.data ?? []
+    ? bookmarksData
+    : bookmarksData?.data ?? []
   const allCount = countsData?.allCount ?? 0
   const testCount = countsData?.testCount ?? 0
   const testSetCount = countsData?.testSetCount ?? 0
 
   const { mutate: toggleBookmark, isPending: isRemoving } = useToggleBookmarkMutation()
+  const currentTabTotal =
+    activeTab === 'tests'
+      ? testCount
+      : activeTab === 'test_sets'
+        ? testSetCount
+        : allCount
+  const totalPages = Math.max(1, Math.ceil(currentTabTotal / limit))
+
+  const handlePageChange = (newPage: number) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('page', String(newPage))
+      return next
+    })
+  }
+
+  useEffect(() => {
+    if (page > totalPages && totalPages > 0) {
+      handlePageChange(totalPages)
+    }
+  }, [page, totalPages])
 
   const handleRemoveConfirm = () => {
     if (!selectedBookmark) return
@@ -79,22 +106,17 @@ export default function BookmarksView() {
     if (!query.trim()) return true
     const q = query.toLowerCase().trim()
     return (
-      bm.title.toLowerCase().includes(q) ||
+      Boolean(bm.title?.toLowerCase().includes(q)) ||
       (bm.subtitle && bm.subtitle.toLowerCase().includes(q))
     )
   }
 
   // Filter by Tab and Search, automatically sorted by Newest First
   const displayedBookmarks = bookmarks
-  .filter((bm) => matchesSearch(bm, searchQuery))
-  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .filter((bm) => matchesSearch(bm, searchQuery))
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
-  // const handleRemoveConfirm = () => {
-  //   if (!selectedBookmark) return
-  //   setBookmarks((prev) => prev.filter((b) => b.bookmark_id !== selectedBookmark.bookmark_id))
-  //   setIsRemoveOpen(false)
-  //   setSelectedBookmark(null)
-  // }
+
 
   const formatDate = (iso: string) => {
     try {
@@ -148,7 +170,7 @@ export default function BookmarksView() {
       </div>
 
       {/* Global Empty State */}
-      {allCount.length === 0 ? (
+      {allCount === 0 ? (
         <div className="min-h-[50vh] flex items-center justify-center p-4">
           <div className="text-center space-y-4 max-w-sm w-full bg-white border border-slate-200/80 rounded-3xl p-8 shadow-xs">
             <div className="h-14 w-14 mx-auto rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-inner">
@@ -169,7 +191,14 @@ export default function BookmarksView() {
             {/* Category Tabs */}
             <Tabs
               value={activeTab}
-              onValueChange={(val) => setSearchParams({ tab: val })}
+              onValueChange={(val) => {
+                setSearchParams((prev) => {
+                  const next = new URLSearchParams(prev)
+                  next.set('tab', val)
+                  next.set('page', '1')
+                  return next
+                })
+              }}
               className="w-auto"
             >
               <TabsList className="rounded-xl bg-slate-100 p-1 self-start">
@@ -220,6 +249,42 @@ export default function BookmarksView() {
             }}
             formatDate={formatDate}
           />
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+              <p className="text-xs text-slate-500">
+                Showing <span className="font-semibold text-slate-700">{offset + 1}</span> to{' '}
+                <span className="font-semibold text-slate-700">
+                  {Math.min(offset + limit, currentTabTotal)}
+                </span>{' '}
+                of <span className="font-semibold text-slate-700">{currentTabTotal}</span>
+              </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => handlePageChange(page - 1)}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
+                >
+                  Previous
+                </button>
+
+                <span className="text-xs text-slate-600 font-medium px-1">
+                  Page {page} of {totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  disabled={page >= totalPages}
+                  onClick={() => handlePageChange(page + 1)}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
