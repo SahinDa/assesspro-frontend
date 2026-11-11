@@ -13,6 +13,8 @@ import {
   Play,
   Eye,
   Loader2,
+  Bookmark,
+  Users,
 } from 'lucide-react'
 import TestRunnerView from './TestRunnerView'
 import { Card, CardContent } from '@/components/ui/card'
@@ -28,12 +30,14 @@ import {
 import TestSetFormModal, { type TestSetItem } from '../components/TestSetFormModal'
 import DeleteTestSetDialog from '../components/DeleteTestSetDialog'
 import TestSetDetailsView from './TestSetDetailsView'
-import { UserRole, type UserRoleType } from '@/config/enums'
+import { UserRole, type UserRoleType, BookmarkType, BookmarkTarget, TestStatus } from '@/config/enums'
 import type { TestSetFormData } from '../utils/testSetValidation'
 import { useTestSetList, useTestSetCount } from '../api/useTestSetQueries'
 import { useTestSetMutations } from '../api/useTestSetMutations'
 import { testSetService } from '../services/testsetService'
-import {useAttemptMutations} from '../api/useAttemptMutations'
+import { useAttemptMutations } from '../api/useAttemptMutations'
+import BookmarkToggleButton from '@/modules/bookmarks/components/BookmarkToggleButton'
+import { useToggleBookmarkMutation } from '@/modules/bookmarks/api/useToggleBookmarkMutation'
 
 interface TestSetsViewProps {
   testId?: string
@@ -52,12 +56,10 @@ export default function TestSetsView({
   onBack,
   onTakeTestSet,
 }: TestSetsViewProps) {
-  // Resolve testId from props or URL route parameters
   const { testId: routeTestId } = useParams<{ testId: string }>()
   const resolvedTestId = propTestId || routeTestId
   const displayName = propTestName || 'Test Details'
 
-  // Server queries
   const {
     data: testSets = [],
     isLoading,
@@ -67,22 +69,39 @@ export default function TestSetsView({
 
   const { data: totalCount = 0 } = useTestSetCount(resolvedTestId)
 
-  // Server mutations
   const {
     createTestSet,
     updateTestSet,
     deleteTestSet,
   } = useTestSetMutations()
   const { startAttempt } = useAttemptMutations()
+
+  const {
+    mutate: toggleBookmark,
+    isPending: isBookmarkPending,
+    variables: pendingBookmarkVars,
+  } = useToggleBookmarkMutation()
+
   const [sessionData, setSessionData] = useState<any>(null)
 
   const isStudent = userRole === UserRole.STUDENT
   const isAdmin = userRole === UserRole.ADMIN || readOnly
   const isOrgAuthor = userRole === UserRole.ORGANIZATION && !readOnly
 
+  const handleToggleBookmark = (set: TestSetItem, target?: BookmarkTarget) => {
+    const setId = set.set_id || (set as any).id
+    if (!setId) return
+
+    toggleBookmark({
+      item_id: setId,
+      item_type: BookmarkType.TEST_SET,
+      ...(!isStudent && { target_type: target ?? BookmarkTarget.ORGANIZATION }),
+    })
+  }
+
   const handleTakeTest = (set: TestSetItem) => {
     if (!resolvedTestId || !set.set_id) return
-  
+
     startAttempt.mutate(
       { test_id: resolvedTestId, testset_id: set.set_id },
       {
@@ -94,14 +113,9 @@ export default function TestSetsView({
     )
   }
 
-  // State to track which set is being inspected in Details View or Test Runner
   const [selectedSetForDetails, setSelectedSetForDetails] = useState<TestSetItem | null>(null)
-  const [activeRunningSet, setActiveRunningSet] = useState<TestSetItem | null>(null)
-
-  // Track async loading of full question set when clicking edit on a card
   const [loadingEditSetId, setLoadingEditSetId] = useState<string | null>(null)
 
-  // Organization-only modal & dialog states
   const [modalState, setModalState] = useState<{
     isOpen: boolean
     testSet: TestSetItem | null
@@ -112,11 +126,9 @@ export default function TestSetsView({
 
   const [deletingSet, setDeletingSet] = useState<TestSetItem | null>(null)
 
-  // Directly fetch questions before opening the modal if not already present
   const handleEditFromCard = async (set: TestSetItem) => {
     const setId = set.set_id || (set as any).id || (set as any)._id
 
-    // If questions are already populated on this object, open directly
     if (Array.isArray(set.questions) && set.questions.length > 0) {
       setModalState({
         isOpen: true,
@@ -132,7 +144,6 @@ export default function TestSetsView({
     try {
       setLoadingEditSetId(setId)
 
-      // Fetch the full details containing questions directly from the service
       const res = await testSetService.getTestSet({
         testId: resolvedTestId!,
         testSetId: setId,
@@ -151,7 +162,6 @@ export default function TestSetsView({
       })
     } catch (err) {
       console.error('Failed to load full test set questions:', err)
-      // Fallback: open with what we have
       setModalState({
         isOpen: true,
         testSet: {
@@ -165,7 +175,6 @@ export default function TestSetsView({
     }
   }
 
-  // Handle Create and Update operations
   const handleSaveTestSet = (data: TestSetFormData, id?: string) => {
     if (!resolvedTestId) return
 
@@ -197,7 +206,6 @@ export default function TestSetsView({
     }
   }
 
-  // Handle Delete operation
   const handleConfirmDelete = (id: string) => {
     if (!resolvedTestId) return
 
@@ -217,7 +225,6 @@ export default function TestSetsView({
     )
   }
 
-  // GUARD: Missing testId
   if (!resolvedTestId) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3 text-center p-4">
@@ -232,7 +239,6 @@ export default function TestSetsView({
     )
   }
 
-  // STUDENT ONLY: Launch Active Test Runner
   if (isStudent && sessionData) {
     return (
       <TestRunnerView
@@ -241,19 +247,17 @@ export default function TestSetsView({
         timerMinutes={sessionData.timer_minutes || sessionData.testsetDetails?.timer_minutes}
         testName={displayName}
         setName={sessionData.testsetDetails?.name}
-        positiveMarks ={sessionData?.testsetDetails?.positive_marking_value}
-        isNegativeMarking = {sessionData?.testsetDetails?.is_negative_marking}
-        negativeMarks = {sessionData?.testsetDetails?.negative_score_value}
+        positiveMarks={sessionData?.testsetDetails?.positive_marking_value}
+        isNegativeMarking={sessionData?.testsetDetails?.is_negative_marking}
+        negativeMarks={sessionData?.testsetDetails?.negative_score_value}
         onExit={() => setSessionData(null)}
       />
     )
   }
 
-  // DETAILS VIEW: Shown for both Organization (with edit) AND Admin (read-only)
   if (!isStudent && selectedSetForDetails) {
     return (
       <>
-        {console.log('Selected set clicked:', selectedSetForDetails)}
         <TestSetDetailsView
           testId={resolvedTestId}
           testSetId={selectedSetForDetails.set_id}
@@ -282,7 +286,6 @@ export default function TestSetsView({
           }}
         />
 
-        {/* Organization Edit Modal */}
         {isOrgAuthor && (
           <TestSetFormModal
             isOpen={modalState.isOpen}
@@ -296,7 +299,6 @@ export default function TestSetsView({
     )
   }
 
-  // Loading State
   if (isLoading) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
@@ -306,7 +308,6 @@ export default function TestSetsView({
     )
   }
 
-  // Error State
   if (isError) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center gap-2 text-center">
@@ -316,10 +317,8 @@ export default function TestSetsView({
     )
   }
 
-  // MAIN TEST SETS GRID VIEW
   return (
     <div className="space-y-6">
-      {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -356,7 +355,6 @@ export default function TestSetsView({
           </p>
         </div>
 
-        {/* Create Test Set Button: ONLY Organization Authors */}
         {isOrgAuthor && testSets.length > 0 && (
           <Button
             type="button"
@@ -368,7 +366,6 @@ export default function TestSetsView({
         )}
       </div>
 
-      {/* Grid or Empty State */}
       {testSets.length === 0 ? (
         <div className="min-h-[50vh] flex items-center justify-center p-4">
           <div className="text-center space-y-4 max-w-sm w-full bg-white border border-slate-200/80 rounded-3xl p-8 shadow-xs">
@@ -453,19 +450,105 @@ export default function TestSetsView({
                           -{set.negative_score_value} Neg
                         </Badge>
                       )}
+                      {isStudent && set.is_student_bookmarked && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-semibold gap-1 py-0.5"
+                        >
+                          <Bookmark className="h-3 w-3 fill-amber-500 text-amber-500" /> Curated
+                        </Badge>
+                      )}
                     </div>
 
-                    {/* 3-Dot Menu: ONLY for Organization Authors */}
-                    {isOrgAuthor && (
+                    {/* Student Bookmark Toggle */}
+                    {isStudent && (
                       <div onClick={(e) => e.stopPropagation()}>
+                        <BookmarkToggleButton
+                          isBookmarked={Boolean(set.is_bookmarked)}
+                          isLoading={
+                            isBookmarkPending &&
+                            (pendingBookmarkVars as any)?.item_id === setId
+                          }
+                          onToggle={() => handleToggleBookmark(set)}
+                        />
+                      </div>
+                    )}
+
+                    {/* Organization Bookmark Indicator & 3-Dot Actions */}
+                    {isOrgAuthor && (
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        {(set.is_bookmarked || set.is_student_bookmarked) && (
+                          <div
+                            title={
+                              set.is_bookmarked && set.is_student_bookmarked
+                                ? 'Bookmarked for Org & Students'
+                                : set.is_bookmarked
+                                  ? 'Bookmarked for Org'
+                                  : 'Bookmarked for Students'
+                            }
+                            className="h-7 px-2 rounded-lg bg-amber-50 border border-amber-200 flex items-center gap-1 text-[11px] font-semibold text-amber-700"
+                          >
+                            <Bookmark className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+                            {set.is_bookmarked && set.is_student_bookmarked ? (
+                              <span>Org & Student</span>
+                            ) : set.is_bookmarked ? (
+                              <span>Org</span>
+                            ) : (
+                              <span>Student</span>
+                            )}
+                          </div>
+                        )}
+
                         <DropdownMenu>
                           <DropdownMenuTrigger className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer outline-none border-0 bg-transparent">
                             <MoreHorizontal className="h-4 w-4" />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent
                             align="end"
-                            className="w-36 rounded-xl p-1 shadow-lg border-slate-200 bg-white z-30"
+                            className="w-52 rounded-xl p-1 shadow-lg border-slate-200 bg-white z-30"
                           >
+                            <DropdownMenuItem
+                              disabled={set.status !== undefined && set.status !== TestStatus.ACTIVE}
+                              onClick={() =>
+                                (set.status === undefined || set.status === TestStatus.ACTIVE) &&
+                                handleToggleBookmark(set, BookmarkTarget.ORGANIZATION)
+                              }
+                              className={`text-xs font-medium gap-2 rounded-lg py-2 ${
+                                set.status !== undefined && set.status !== TestStatus.ACTIVE
+                                  ? 'opacity-40 cursor-not-allowed text-slate-400'
+                                  : 'cursor-pointer text-slate-700 hover:bg-slate-50'
+                              }`}
+                            >
+                              <Bookmark
+                                className={`h-3.5 w-3.5 ${
+                                  set.is_bookmarked ? 'fill-indigo-600 text-indigo-600' : 'text-indigo-600'
+                                }`}
+                              />
+                              <span>{set.is_bookmarked ? 'Remove Org Bookmark' : 'Bookmark for Organization'}</span>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                              disabled={set.status !== undefined && set.status !== TestStatus.ACTIVE}
+                              onClick={() =>
+                                (set.status === undefined || set.status === TestStatus.ACTIVE) &&
+                                handleToggleBookmark(set, BookmarkTarget.STUDENT)
+                              }
+                              className={`text-xs font-medium gap-2 rounded-lg py-2 ${
+                                set.status !== undefined && set.status !== TestStatus.ACTIVE
+                                  ? 'opacity-40 cursor-not-allowed text-slate-400'
+                                  : 'cursor-pointer text-slate-700 hover:bg-slate-50'
+                              }`}
+                            >
+                              <Users
+                                className={`h-3.5 w-3.5 ${
+                                  set.is_student_bookmarked ? 'fill-amber-500 text-amber-500' : 'text-amber-500'
+                                }`}
+                              />
+                              <span>{set.is_student_bookmarked ? 'Remove Student Bookmark' : 'Bookmark for Students'}</span>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator className="my-1 bg-slate-100" />
+
                             <DropdownMenuItem
                               disabled={isSetLoading}
                               onClick={() => handleEditFromCard(set)}
@@ -478,7 +561,9 @@ export default function TestSetsView({
                               )}
                               <span>Edit</span>
                             </DropdownMenuItem>
+
                             <DropdownMenuSeparator className="my-1 bg-slate-100" />
+
                             <DropdownMenuItem
                               onClick={() => setDeletingSet(set)}
                               className="text-xs font-medium gap-2 rounded-lg text-rose-600 hover:bg-rose-50 cursor-pointer py-2"
@@ -501,7 +586,6 @@ export default function TestSetsView({
                     </p>
                   </div>
 
-                  {/* Footer Buttons */}
                   {isStudent ? (
                     <div className="pt-2 border-t border-slate-100">
                       <Button
@@ -544,7 +628,6 @@ export default function TestSetsView({
         </div>
       )}
 
-      {/* Organization-Only Modals */}
       {isOrgAuthor && (
         <>
           <TestSetFormModal
