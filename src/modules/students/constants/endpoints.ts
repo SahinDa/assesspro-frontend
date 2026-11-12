@@ -1,6 +1,7 @@
 export const STUDENT_ENDPOINTS = {
     ACTIVE_STUDENTS_LIST: '/organizations/list',
     STUDENTS_COUNT: '/organizations/count',
+    SEARCH_STUDENTS: '/organizations/users/search',
     PENDING_STUDENTS_LIST: '/organizations/join-requests/pending',
     REJECTED_STUDENTS_LIST: '/organizations/join-requests/rejected',
     HANDLE_STUDENTS_REQUEST: (requestId: string) =>

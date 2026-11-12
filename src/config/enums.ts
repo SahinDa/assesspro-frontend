@@ -240,3 +240,9 @@ export enum AttemptSortBy {
   TOP_SCORE = 'top_score',
   LOWEST_SCORE = 'lowest_score',
 }
+
+export enum StudentSearchType {
+  ACTIVE = 1,
+  PENDING = 2,
+  REJECTED = 3,
+}

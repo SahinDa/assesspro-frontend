@@ -1,4 +1,4 @@
-import { JoinRequestStatus } from '@/config/enums';
+import { JoinRequestStatus , StudentSearchType } from '@/config/enums';
 export interface StudentListQueryParams {
     limit?: number;
     offset?: number;
@@ -24,6 +24,11 @@ export interface StudentListQueryParams {
 
   export interface RemoveOrgUserParams {
     userId: string;
+  }
+
+  export interface SearchStudentsQueryParams extends StudentListQueryParams {
+    query: string;
+    type: StudentSearchType;
   }
 
   //Response 
@@ -61,3 +66,9 @@ export interface StudentListQueryParams {
     success: boolean;
     message: string;
   }
+
+  export type SearchStudentResultItem =
+  | ActiveOrgUserResponse
+  | JoinRequestUserResponse;
+
+export type SearchStudentsResponse = SearchStudentResultItem[];
