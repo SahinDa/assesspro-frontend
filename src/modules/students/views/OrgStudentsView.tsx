@@ -404,7 +404,7 @@ export default function OrgStudentsView({
                 className="text-xs font-semibold rounded-lg px-3 gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-xs cursor-pointer"
               >
                 <Clock className="h-3.5 w-3.5 text-amber-500" />
-                Join Requests
+                Join Requests ({totalPendingCount})
                 {totalPendingCount > 0 && (
                   <span className="h-4 w-4 rounded-full bg-amber-500 text-white text-[10px] flex items-center justify-center font-bold">
                     {totalPendingCount}
