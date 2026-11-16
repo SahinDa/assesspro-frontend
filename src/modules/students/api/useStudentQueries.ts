@@ -1,6 +1,6 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { studentService } from '../services/studentService';
-import { STUDENT_QUERY_KEYS } from '../constants/studentQueryKeys';
+import { STUDENT_QUERY_KEYS } from './studentQueryKeys';
 import { useActiveOrgId } from '@/hooks/useActiveOrgId';
 import type {
   StudentListQueryParams,
