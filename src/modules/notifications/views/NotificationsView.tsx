@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react'
 import { Inbox, CheckCheck } from 'lucide-react'
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -80,18 +80,18 @@ export interface NotificationProps {
 export default function NotificationsView({
   readOnly = false,
   orgId: propOrgId,
-}:NotificationProps) {
+}: NotificationProps) {
   const [notifications, setNotifications] = useState<NotificationModel[]>(INITIAL_NOTIFICATIONS)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [filter, setFilter] = useState<NotificationFilterType>('all')
 
- const { orgId, isAdmin, isOrganization } = useActiveOrgId(propOrgId)
+  const { orgId, isAdmin, isOrganization } = useActiveOrgId(propOrgId)
 
-const role = isAdmin
-  ? UserRole.ADMIN
-  : isOrganization
-    ? UserRole.ORGANIZATION
-    : null
+  const role = isAdmin
+    ? UserRole.ADMIN
+    : isOrganization
+      ? UserRole.ORGANIZATION
+      : null
 
   const toggleExpand = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id))
@@ -136,7 +136,7 @@ const role = isAdmin
 
   const filteredNotifications = useMemo(() => {
     return notifications.filter((item) => {
-      if (filter === 'direct' && item.is_global ) return false
+      if (filter === 'direct' && item.is_global) return false
       if (filter === 'global' && !item.is_global) return false
       return true
     })
@@ -163,12 +163,12 @@ const role = isAdmin
   }, [unpinnedNotifications])
 
   const directCount = notifications.filter((n) => !n.is_global).length
-  const globalCount = notifications.filter((n) => n.is_global ).length
+  const globalCount = notifications.filter((n) => n.is_global).length
   const unreadCount = notifications.filter((n) => !n.is_read).length
 
   return (
     <main className="w-full max-w-4xl mx-auto space-y-8 pb-24 px-2 sm:px-0">
-      
+
       {/* 1. Header Section */}
       <header className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -204,13 +204,13 @@ const role = isAdmin
         <Separator />
       </header>
       {role !== null && (
-  <CreateAnnouncementModal
-    role={role}
-    orgId={orgId ?? null}
-    onSubmit={handleCreateAnnouncement}
-   // isSubmitting={createMutation.isPending}
-  />
-)}
+        <CreateAnnouncementModal
+          role={role}
+          orgId={orgId ?? null}
+          onSubmit={handleCreateAnnouncement}
+        // isSubmitting={createMutation.isPending}
+        />
+      )}
 
       {/* 2. Filter Toolbar */}
       <Card className="rounded-2xl shadow-xs border-border">
@@ -240,7 +240,7 @@ const role = isAdmin
         </Card>
       ) : (
         <div className="space-y-10">
-          
+
           {/* A. Pinned Section */}
           {pinnedNotifications.length > 0 && (
             <section className="space-y-4">
