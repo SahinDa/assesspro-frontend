@@ -246,3 +246,8 @@ export enum StudentSearchType {
   PENDING = 2,
   REJECTED = 3,
 }
+
+export enum NotificationFilterEnum {
+  GLOBAL = 1,
+  PERSONAL = 2,
+}
