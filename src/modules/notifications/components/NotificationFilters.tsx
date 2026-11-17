@@ -1,4 +1,4 @@
-import { Pin, Globe, Bell, LayoutGrid } from 'lucide-react'
+import {Globe, Bell, LayoutGrid } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { type NotificationFilterType } from '../utils/notificationValidation'
@@ -7,7 +7,6 @@ interface NotificationFiltersProps {
   activeFilter: NotificationFilterType
   onFilterChange: (filter: NotificationFilterType) => void
   totalCount: number
-  pinnedCount: number
   directCount: number
   globalCount: number
 }
@@ -16,15 +15,14 @@ export default function NotificationFilters({
   activeFilter,
   onFilterChange,
   totalCount,
-  pinnedCount,
   directCount,
   globalCount,
 }: NotificationFiltersProps) {
   const tabs = [
     { id: 'all' as const, label: 'All', icon: LayoutGrid, count: totalCount },
-    { id: 'pinned' as const, label: 'Pinned', icon: Pin, count: pinnedCount },
-    { id: 'direct' as const, label: 'Direct', icon: Bell, count: directCount },
-    { id: 'global' as const, label: 'Global', icon: Globe, count: globalCount },
+   // { id: 'pinned' as const, label: 'Pinned', icon: Pin, count: pinnedCount },
+    { id: 'direct' as const, label: 'Personal', icon: Bell, count: directCount },
+    { id: 'global' as const, label: 'Announcements', icon: Globe, count: globalCount },
   ]
 
   return (

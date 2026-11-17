@@ -95,9 +95,8 @@ export default function NotificationsView() {
 
   const filteredNotifications = useMemo(() => {
     return notifications.filter((item) => {
-      if (filter === 'pinned' && !item.is_pinned) return false
-      if (filter === 'direct' && (item.is_global || item.is_pinned)) return false
-      if (filter === 'global' && (!item.is_global || item.is_pinned)) return false
+      if (filter === 'direct' && item.is_global ) return false
+      if (filter === 'global' && !item.is_global) return false
       return true
     })
   }, [notifications, filter])
@@ -122,9 +121,8 @@ export default function NotificationsView() {
     return groups
   }, [unpinnedNotifications])
 
-  const pinnedCount = notifications.filter((n) => n.is_pinned).length
-  const directCount = notifications.filter((n) => !n.is_global && !n.is_pinned).length
-  const globalCount = notifications.filter((n) => n.is_global && !n.is_pinned).length
+  const directCount = notifications.filter((n) => !n.is_global).length
+  const globalCount = notifications.filter((n) => n.is_global ).length
   const unreadCount = notifications.filter((n) => !n.is_read).length
 
   return (
@@ -171,7 +169,6 @@ export default function NotificationsView() {
           <NotificationFilters
             activeFilter={filter}
             onFilterChange={setFilter}
-            pinnedCount={pinnedCount}
             directCount={directCount}
             globalCount={globalCount}
             totalCount={notifications.length}
@@ -200,7 +197,7 @@ export default function NotificationsView() {
             <section className="space-y-4">
               <div className="flex items-center gap-2.5">
                 <Badge variant="outline" className="text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100/70 border-amber-300 py-0.5 px-2">
-                  📌 Pinned Announcements
+                  📌 Pinned
                 </Badge>
                 <Separator className="flex-1 bg-amber-200/70" />
               </div>
@@ -220,7 +217,7 @@ export default function NotificationsView() {
           )}
 
           {/* B. Chronological Feed Sections */}
-          {filter !== 'pinned' && (['Today', 'Yesterday', 'Earlier'] as const).map((groupKey) => {
+          {(['Today', 'Yesterday', 'Earlier'] as const).map((groupKey) => {
             const items = groupedUnpinnedNotifications[groupKey]
             if (!items || items.length === 0) return null
 

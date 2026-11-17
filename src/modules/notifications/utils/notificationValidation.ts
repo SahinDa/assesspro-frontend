@@ -27,7 +27,7 @@ export const createNotificationSchema = z.object({
 
 export type CreateNotificationDto = z.infer<typeof createNotificationSchema>
 
-export type NotificationFilterType = 'all' | 'pinned' | 'direct' | 'global'
+export type NotificationFilterType = 'all' | 'direct' | 'global'
 
 export function formatTimeAgo(timestamp: string | Date): string {
   const date = new Date(timestamp)
