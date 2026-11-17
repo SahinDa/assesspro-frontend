@@ -13,11 +13,14 @@ import { Separator } from '@/components/ui/separator'
 
 import NotificationItem from '../components/NotificationItem'
 import NotificationFilters from '../components/NotificationFilters'
+import CreateAnnouncementModal from '../components/CreateAnnouncementModal'
 import {
   type NotificationModel,
   type NotificationFilterType,
   getDateGroup,
 } from '../utils/notificationValidation'
+import { useActiveOrgId } from '@/hooks/useActiveOrgId'
+import { UserRole } from '@/config/enums';
 
 const INITIAL_NOTIFICATIONS: NotificationModel[] = [
   {
@@ -69,11 +72,26 @@ const INITIAL_NOTIFICATIONS: NotificationModel[] = [
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
   },
 ]
+export interface NotificationProps {
+  readOnly?: boolean
+  orgId?: string
+}
 
-export default function NotificationsView() {
+export default function NotificationsView({
+  readOnly = false,
+  orgId: propOrgId,
+}:NotificationProps) {
   const [notifications, setNotifications] = useState<NotificationModel[]>(INITIAL_NOTIFICATIONS)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [filter, setFilter] = useState<NotificationFilterType>('all')
+
+ const { orgId, isAdmin, isOrganization } = useActiveOrgId(propOrgId)
+
+const role = isAdmin
+  ? UserRole.ADMIN
+  : isOrganization
+    ? UserRole.ORGANIZATION
+    : null
 
   const toggleExpand = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id))
@@ -82,6 +100,29 @@ export default function NotificationsView() {
 
   const handleMarkAllRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+  }
+
+  const handleCreateAnnouncement = (payload: {
+    orgId: string | null
+    is_global: true
+    subject: string
+    message: string
+    url?: string
+    isPinned: boolean
+  }) => {
+    const newItem: NotificationModel = {
+      id: `n-${Date.now()}`,
+      org_id: payload.orgId ?? '',
+      user_id: null,
+      is_global: true,
+      is_pinned: payload.isPinned,
+      is_read: false,
+      subject: payload.subject,
+      message: payload.message,
+      url: payload.url ?? null,
+      created_at: new Date().toISOString(),
+    }
+    setNotifications((prev) => [newItem, ...prev])
   }
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
@@ -162,6 +203,14 @@ export default function NotificationsView() {
         </div>
         <Separator />
       </header>
+      {role !== null && (
+  <CreateAnnouncementModal
+    role={role}
+    orgId={orgId ?? null}
+    onSubmit={handleCreateAnnouncement}
+   // isSubmitting={createMutation.isPending}
+  />
+)}
 
       {/* 2. Filter Toolbar */}
       <Card className="rounded-2xl shadow-xs border-border">
