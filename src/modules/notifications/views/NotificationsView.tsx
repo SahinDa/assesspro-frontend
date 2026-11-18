@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Inbox, CheckCheck, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
+import { Inbox, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -37,7 +37,6 @@ export default function NotificationsView({
 }: NotificationProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [filter, setFilter] = useState<NotificationFilterType>('all')
-  const [readIds, setReadIds] = useState<Set<string>>(() => new Set())
 
   const { orgId, isAdmin, isOrganization } = useActiveOrgId(propOrgId)
   const [page, setPage] = useState(0)
@@ -77,13 +76,13 @@ export default function NotificationsView({
       user_id: item.user_id,
       is_global: item.is_global,
       is_pinned: item.is_pinned,
-      is_read: readIds.has(item.notification_id),
+      is_read: true,
       subject: item.subject,
       message: item.message,
       url: item.url,
       created_at: item.created_at,
     }))
-  }, [rawNotifications, readIds])
+  }, [rawNotifications])
 
   const canDeleteNotification = (item: NotificationModel): boolean => {
     if (readOnly) return false
@@ -119,20 +118,6 @@ export default function NotificationsView({
 
   const toggleExpand = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id))
-    setReadIds((prev) => {
-      if (prev.has(id)) return prev
-      const next = new Set(prev)
-      next.add(id)
-      return next
-    })
-  }
-
-  const handleMarkAllRead = () => {
-    setReadIds((prev) => {
-      const next = new Set(prev)
-      notifications.forEach((n) => next.add(n.id))
-      return next
-    })
   }
 
   const handleFilterChange = (nextFilter: NotificationFilterType) => {
@@ -181,42 +166,20 @@ export default function NotificationsView({
 
   const directCount = notifications.filter((n) => !n.is_global).length
   const globalCount = notifications.filter((n) => n.is_global).length
-  const unreadCount = notifications.filter((n) => !n.is_read).length
 
   return (
     <main className="w-full max-w-4xl mx-auto space-y-8 pb-24 px-2 sm:px-0">
 
       {/* 1. Header Section */}
       <header className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <CardHeader className="p-0 space-y-1">
-            <div className="flex items-center gap-2.5">
-              <CardTitle className="text-2xl font-black tracking-tight text-foreground">
-                Notifications
-              </CardTitle>
-              {unreadCount > 0 && (
-                <Badge variant="default" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-2.5 py-0.5 rounded-full shadow-none">
-                  {unreadCount} Unread
-                </Badge>
-              )}
-            </div>
-            <CardDescription className="text-xs text-muted-foreground whitespace-nowrap">
-              Stay updated on upcoming contests, test results, and platform announcements.
-            </CardDescription>
-          </CardHeader>
-
-          {unreadCount > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleMarkAllRead}
-              className="text-xs font-bold gap-1.5 h-9 rounded-xl shrink-0"
-            >
-              <CheckCheck className="h-4 w-4 text-indigo-600" />
-              <span>Mark all as read</span>
-            </Button>
-          )}
-        </div>
+        <CardHeader className="p-0 space-y-1">
+          <CardTitle className="text-2xl font-black tracking-tight text-foreground">
+            Notifications
+          </CardTitle>
+          <CardDescription className="text-xs text-muted-foreground whitespace-nowrap">
+            Stay updated on upcoming contests, test results, and platform announcements.
+          </CardDescription>
+        </CardHeader>
         <Separator />
       </header>
       {role !== null && !readOnly && (
