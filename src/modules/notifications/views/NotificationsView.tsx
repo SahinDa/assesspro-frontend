@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Inbox, CheckCheck, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Inbox, CheckCheck, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -20,60 +20,11 @@ import {
   getDateGroup,
 } from '../utils/notificationValidation'
 import { useActiveOrgId } from '@/hooks/useActiveOrgId'
-import { UserRole } from '@/config/enums'
+import { UserRole, NotificationFilterEnum } from '@/config/enums'
+import { useNotificationQueries } from '../api/useNotificationQueries'
 
 const PAGE_LIMIT = 20
 
-const INITIAL_NOTIFICATIONS: NotificationModel[] = [
-  {
-    id: 'n-1',
-    org_id: 'org-main',
-    user_id: 'u-1',
-    is_global: false,
-    is_pinned: true,
-    is_read: false,
-    subject: 'National Coding Grand Prix 2026 Guidelines',
-    message: 'Please ensure your webcam, microphone, and browser proctoring permissions are configured and granted 15 minutes before the session starts. Any tab switches during the test will trigger automated proctoring flags.',
-    url: 'https://example.com/contest-guidelines',
-    created_at: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
-  },
-  {
-    id: 'n-2',
-    org_id: 'org-main',
-    user_id: 'u-1',
-    is_global: false,
-    is_pinned: false,
-    is_read: false,
-    subject: 'DSA Mock Test #4 Score Published',
-    message: 'Your test submission has been fully evaluated.\n\n• Score: 94 / 100\n• Percentile: 98.6%\n• Time Taken: 42m 10s\n\nDetailed code analysis and test case breakdowns are ready for review.',
-    url: 'https://example.com/reports/t-101',
-    created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-  },
-  {
-    id: 'n-3',
-    org_id: 'org-main',
-    user_id: null,
-    is_global: true,
-    is_pinned: false,
-    is_read: true,
-    subject: 'Scheduled Infrastructure Maintenance',
-    message: 'The assessment portal will undergo core infrastructure upgrades this Sunday from 02:00 AM to 03:00 AM UTC. Active test sessions will be paused safely.',
-    url: null,
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-  },
-  {
-    id: 'n-4',
-    org_id: 'org-main',
-    user_id: null,
-    is_global: true,
-    is_pinned: false,
-    is_read: true,
-    subject: 'New System Design Module Live',
-    message: 'A fresh 4-part Distributed Architecture assessment module is now accessible in your curriculum catalog.',
-    url: 'https://example.com/modules/sys-design',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
-  },
-]
 export interface NotificationProps {
   readOnly?: boolean
   orgId?: string
@@ -83,9 +34,9 @@ export default function NotificationsView({
   readOnly = false,
   orgId: propOrgId,
 }: NotificationProps) {
-  const [notifications, setNotifications] = useState<NotificationModel[]>(INITIAL_NOTIFICATIONS)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [filter, setFilter] = useState<NotificationFilterType>('all')
+  const [readIds, setReadIds] = useState<Set<string>>(() => new Set())
 
   const { orgId, isAdmin, isOrganization } = useActiveOrgId(propOrgId)
   const [page, setPage] = useState(0)
@@ -97,13 +48,56 @@ export default function NotificationsView({
       ? UserRole.ORGANIZATION
       : null
 
+  const apiFilterType = useMemo(() => {
+    if (filter === 'global') return NotificationFilterEnum.GLOBAL
+    if (filter === 'direct') return NotificationFilterEnum.PERSONAL
+    return undefined
+  }, [filter])
+
+  const {
+    data: rawNotifications = [],
+    isLoading,
+    isPlaceholderData,
+  } = useNotificationQueries(
+    {
+      offset,
+      limit: PAGE_LIMIT,
+      type: apiFilterType,
+    },
+    propOrgId,
+  )
+
+  const notifications: NotificationModel[] = useMemo(() => {
+    return rawNotifications.map((item) => ({
+      id: item.notification_id,
+      org_id: item.org_id ?? '',
+      user_id: item.user_id,
+      is_global: item.is_global,
+      is_pinned: item.is_pinned,
+      is_read: readIds.has(item.notification_id),
+      subject: item.subject,
+      message: item.message,
+      url: item.url,
+      created_at: item.created_at,
+    }))
+  }, [rawNotifications, readIds])
+
   const toggleExpand = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id))
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)))
+    setReadIds((prev) => {
+      if (prev.has(id)) return prev
+      const next = new Set(prev)
+      next.add(id)
+      return next
+    })
   }
 
   const handleMarkAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+    setReadIds((prev) => {
+      const next = new Set(prev)
+      notifications.forEach((n) => next.add(n.id))
+      return next
+    })
   }
 
   const handleFilterChange = (nextFilter: NotificationFilterType) => {
@@ -112,60 +106,31 @@ export default function NotificationsView({
     setExpandedId(null)
   }
 
-  const handleCreateAnnouncement = (payload: {
+  // Step 2: wire useCreateAnnouncement here
+  const handleCreateAnnouncement = (_payload: {
     orgId: string | null
     is_global: true
     subject: string
     message: string
     url?: string
     isPinned: boolean
-  }) => {
-    const newItem: NotificationModel = {
-      id: `n-${Date.now()}`,
-      org_id: payload.orgId ?? '',
-      user_id: null,
-      is_global: true,
-      is_pinned: payload.isPinned,
-      is_read: false,
-      subject: payload.subject,
-      message: payload.message,
-      url: payload.url ?? null,
-      created_at: new Date().toISOString(),
-    }
-    setNotifications((prev) => [newItem, ...prev])
-  }
+  }) => {}
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
+  // Step 3: wire useRemoveNotification here
+  const handleDelete = (e: React.MouseEvent, _id: string) => {
     e.stopPropagation()
-    const target = notifications.find((n) => n.id === id)
-    if (target?.is_global) return
-
-    setNotifications((prev) => prev.filter((n) => n.id !== id))
-    if (expandedId === id) setExpandedId(null)
   }
-
-  const filteredNotifications = useMemo(() => {
-    return notifications.filter((item) => {
-      if (filter === 'direct' && item.is_global) return false
-      if (filter === 'global' && !item.is_global) return false
-      return true
-    })
-  }, [notifications, filter])
-
-  const paginatedNotifications = useMemo(() => {
-    return filteredNotifications.slice(offset, offset + PAGE_LIMIT)
-  }, [filteredNotifications, offset])
 
   const hasPrevPage = page > 0
-  const hasNextPage = paginatedNotifications.length === PAGE_LIMIT
+  const hasNextPage = notifications.length === PAGE_LIMIT
 
   const pinnedNotifications = useMemo(() => {
-    return paginatedNotifications.filter((n) => n.is_pinned)
-  }, [paginatedNotifications])
+    return notifications.filter((n) => n.is_pinned)
+  }, [notifications])
 
   const unpinnedNotifications = useMemo(() => {
-    return paginatedNotifications.filter((n) => !n.is_pinned)
-  }, [paginatedNotifications])
+    return notifications.filter((n) => !n.is_pinned)
+  }, [notifications])
 
   const groupedUnpinnedNotifications = useMemo(() => {
     const groups: { [key in 'Today' | 'Yesterday' | 'Earlier']?: NotificationModel[] } = {}
@@ -243,7 +208,14 @@ export default function NotificationsView({
       </Card>
 
       {/* 3. Empty State or Notifications Feed */}
-      {paginatedNotifications.length === 0 ? (
+      {isLoading ? (
+        <Card className="border-dashed shadow-none rounded-2xl">
+          <CardHeader className="text-center py-16 space-y-2">
+            <Loader2 className="h-6 w-6 animate-spin mx-auto text-indigo-600" />
+            <CardDescription className="text-xs">Loading notifications...</CardDescription>
+          </CardHeader>
+        </Card>
+      ) : notifications.length === 0 ? (
         <Card className="border-dashed shadow-none rounded-2xl">
           <CardHeader className="text-center py-16 space-y-2">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted/60">
@@ -319,7 +291,7 @@ export default function NotificationsView({
           <p className="text-xs text-muted-foreground font-medium">
             Showing <span className="font-bold text-foreground">{offset + 1}</span>–
             <span className="font-bold text-foreground">
-              {offset + paginatedNotifications.length}
+              {offset + notifications.length}
             </span>
           </p>
 
@@ -331,7 +303,7 @@ export default function NotificationsView({
                 setPage((p) => Math.max(0, p - 1))
                 setExpandedId(null)
               }}
-              disabled={!hasPrevPage}
+              disabled={!hasPrevPage || isPlaceholderData}
               className="h-8 rounded-xl text-xs font-bold gap-1 cursor-pointer"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
@@ -349,7 +321,7 @@ export default function NotificationsView({
                 setPage((p) => p + 1)
                 setExpandedId(null)
               }}
-              disabled={!hasNextPage}
+              disabled={!hasNextPage || isPlaceholderData}
               className="h-8 rounded-xl text-xs font-bold gap-1 cursor-pointer"
             >
               <span>Next</span>
