@@ -3,11 +3,11 @@ import {NotificationFilterEnum} from '@/config/enums';
 export interface createAnnouncementInput {
     userId?: string | null;
     orgId?: string | null;
-    is_global?: boolean = false; 
+    is_global?: boolean ;
     subject: string;
     message: string;
     url?: string;
-    isPinned?: boolean = false;
+    isPinned?: boolean;
 }
 
 export interface createAnnouncementResponse {
@@ -17,8 +17,8 @@ export interface createAnnouncementResponse {
 
 export interface getNoticationQuery {
      orgId?: string,
-     offset: number = 0,
-     limit: number = 20,
+     offset: number;
+     limit: number;
      type?:NotificationFilterEnum ,
 }
 

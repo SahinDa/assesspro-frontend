@@ -20,17 +20,17 @@ export const notificationService = {
         return res.data;
     },
    
-    getNotification : async(query?:getNoticationQuery):Promise<ApiResponse<getNotificationResponse>> =>{
-        const res = await apiClient.get<ApiResponse<getNotificationResponse>>(
+    getNotification : async(query?:getNoticationQuery):Promise<ApiResponse<getNotificationResponse[]>> =>{
+        const res = await apiClient.get<ApiResponse<getNotificationResponse[]>>(
             NOTIFICATION_ENDPOINTS.GET_NOTIFICATIONS,
-            {query}
+            {params : query}
         )
         return res.data;
     },
 
     removeNotification : async (param : removeNotificationParams) :Promise<ApiResponse<removeNotificationResponse>> =>{
-        const res = await apiClient.get<ApiResponse<removeNotificationResponse>>(
-            NOTIFICATION_ENDPOINTS.REMOVED_NOTIFICATION(param),
+        const res = await apiClient.delete<ApiResponse<removeNotificationResponse>>(
+            NOTIFICATION_ENDPOINTS.REMOVED_NOTIFICATION(param.notificationId),
         )
         return res.data;
     }
