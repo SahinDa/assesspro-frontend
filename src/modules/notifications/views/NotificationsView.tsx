@@ -22,7 +22,7 @@ import {
 import { useActiveOrgId } from '@/hooks/useActiveOrgId'
 import { UserRole, NotificationFilterEnum } from '@/config/enums'
 import { useNotificationQueries } from '../api/useNotificationQueries'
-import { useCreateAnnouncement } from '../api/useNotificationMutation'
+import { useCreateAnnouncement, useRemoveNotification } from '../api/useNotificationMutation'
 
 const PAGE_LIMIT = 20
 
@@ -43,6 +43,7 @@ export default function NotificationsView({
   const [page, setPage] = useState(0)
   const offset = page * PAGE_LIMIT
   const createMutation = useCreateAnnouncement()
+  const removeMutation = useRemoveNotification()
 
   const role = isAdmin
     ? UserRole.ADMIN
@@ -84,6 +85,19 @@ export default function NotificationsView({
     }))
   }, [rawNotifications, readIds])
 
+  const canDeleteNotification = (item: NotificationModel): boolean => {
+    if (readOnly) return false
+
+    // Personal / direct notifications are always deletable by the recipient
+    if (!item.is_global) return true
+
+    // Global / org announcements depend on role
+    if (isAdmin) return true
+    if (isOrganization) return Boolean(item.org_id)
+
+    return false
+  }
+
   const handleCreateAnnouncement = async (payload: {
     orgId: string | null
     is_global: true
@@ -102,7 +116,7 @@ export default function NotificationsView({
     })
     setPage(0)
   }
-  
+
   const toggleExpand = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id))
     setReadIds((prev) => {
@@ -127,10 +141,19 @@ export default function NotificationsView({
     setExpandedId(null)
   }
 
-
-  // Step 3: wire useRemoveNotification here
-  const handleDelete = (e: React.MouseEvent, _id: string) => {
+  const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
+    const target = notifications.find((n) => n.id === id)
+    if (!target || !canDeleteNotification(target)) return
+
+    removeMutation.mutate(
+      { notificationId: id },
+      {
+        onSuccess: () => {
+          if (expandedId === id) setExpandedId(null)
+        },
+      },
+    )
   }
 
   const hasPrevPage = page > 0
@@ -177,7 +200,6 @@ export default function NotificationsView({
                 </Badge>
               )}
             </div>
-            {/* Clean, single-line sentence without line-breaking */}
             <CardDescription className="text-xs text-muted-foreground whitespace-nowrap">
               Stay updated on upcoming contests, test results, and platform announcements.
             </CardDescription>
@@ -198,13 +220,13 @@ export default function NotificationsView({
         <Separator />
       </header>
       {role !== null && !readOnly && (
-  <CreateAnnouncementModal
-    role={role}
-    orgId={orgId ?? null}
-    onSubmit={handleCreateAnnouncement}
-    isSubmitting={createMutation.isPending}
-  />
-)}
+        <CreateAnnouncementModal
+          role={role}
+          orgId={orgId ?? null}
+          onSubmit={handleCreateAnnouncement}
+          isSubmitting={createMutation.isPending}
+        />
+      )}
 
       {/* 2. Filter Toolbar */}
       <Card className="rounded-2xl shadow-xs border-border">
@@ -259,7 +281,11 @@ export default function NotificationsView({
                     notification={item}
                     isExpanded={expandedId === item.id}
                     onToggle={() => toggleExpand(item.id)}
-                    onDelete={(e) => handleDelete(e, item.id)}
+                    onDelete={
+                      canDeleteNotification(item)
+                        ? (e) => handleDelete(e, item.id)
+                        : undefined
+                    }
                   />
                 ))}
               </div>
@@ -287,7 +313,11 @@ export default function NotificationsView({
                       notification={item}
                       isExpanded={expandedId === item.id}
                       onToggle={() => toggleExpand(item.id)}
-                      onDelete={(e) => handleDelete(e, item.id)}
+                      onDelete={
+                        canDeleteNotification(item)
+                          ? (e) => handleDelete(e, item.id)
+                          : undefined
+                      }
                     />
                   ))}
                 </div>
