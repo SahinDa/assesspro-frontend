@@ -1,7 +1,7 @@
 import { apiClient } from '@/lib/apiClient';
 import { NOTIFICATION_ENDPOINTS } from '../constants/endpoints';
-import { ApiResponse } from '@/types/api.types';
-import {
+import type { ApiResponse } from '@/types/api.types';
+import type {
     createAnnouncementInput,
     createAnnouncementResponse,
     getNoticationQuery,
