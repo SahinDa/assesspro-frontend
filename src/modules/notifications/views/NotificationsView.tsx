@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Inbox, CheckCheck } from 'lucide-react'
+import { Inbox, CheckCheck, ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -20,7 +20,9 @@ import {
   getDateGroup,
 } from '../utils/notificationValidation'
 import { useActiveOrgId } from '@/hooks/useActiveOrgId'
-import { UserRole } from '@/config/enums';
+import { UserRole } from '@/config/enums'
+
+const PAGE_LIMIT = 20
 
 const INITIAL_NOTIFICATIONS: NotificationModel[] = [
   {
@@ -86,6 +88,8 @@ export default function NotificationsView({
   const [filter, setFilter] = useState<NotificationFilterType>('all')
 
   const { orgId, isAdmin, isOrganization } = useActiveOrgId(propOrgId)
+  const [page, setPage] = useState(0)
+  const offset = page * PAGE_LIMIT
 
   const role = isAdmin
     ? UserRole.ADMIN
@@ -100,6 +104,12 @@ export default function NotificationsView({
 
   const handleMarkAllRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+  }
+
+  const handleFilterChange = (nextFilter: NotificationFilterType) => {
+    setFilter(nextFilter)
+    setPage(0)
+    setExpandedId(null)
   }
 
   const handleCreateAnnouncement = (payload: {
@@ -142,13 +152,20 @@ export default function NotificationsView({
     })
   }, [notifications, filter])
 
+  const paginatedNotifications = useMemo(() => {
+    return filteredNotifications.slice(offset, offset + PAGE_LIMIT)
+  }, [filteredNotifications, offset])
+
+  const hasPrevPage = page > 0
+  const hasNextPage = paginatedNotifications.length === PAGE_LIMIT
+
   const pinnedNotifications = useMemo(() => {
-    return filteredNotifications.filter((n) => n.is_pinned)
-  }, [filteredNotifications])
+    return paginatedNotifications.filter((n) => n.is_pinned)
+  }, [paginatedNotifications])
 
   const unpinnedNotifications = useMemo(() => {
-    return filteredNotifications.filter((n) => !n.is_pinned)
-  }, [filteredNotifications])
+    return paginatedNotifications.filter((n) => !n.is_pinned)
+  }, [paginatedNotifications])
 
   const groupedUnpinnedNotifications = useMemo(() => {
     const groups: { [key in 'Today' | 'Yesterday' | 'Earlier']?: NotificationModel[] } = {}
@@ -217,7 +234,7 @@ export default function NotificationsView({
         <CardContent className="p-3">
           <NotificationFilters
             activeFilter={filter}
-            onFilterChange={setFilter}
+            onFilterChange={handleFilterChange}
             directCount={directCount}
             globalCount={globalCount}
             totalCount={notifications.length}
@@ -226,7 +243,7 @@ export default function NotificationsView({
       </Card>
 
       {/* 3. Empty State or Notifications Feed */}
-      {filteredNotifications.length === 0 ? (
+      {paginatedNotifications.length === 0 ? (
         <Card className="border-dashed shadow-none rounded-2xl">
           <CardHeader className="text-center py-16 space-y-2">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted/60">
@@ -294,6 +311,51 @@ export default function NotificationsView({
             )
           })}
 
+        </div>
+      )}
+
+      {(hasPrevPage || hasNextPage) && (
+        <div className="flex items-center justify-between pt-4 border-t border-border">
+          <p className="text-xs text-muted-foreground font-medium">
+            Showing <span className="font-bold text-foreground">{offset + 1}</span>–
+            <span className="font-bold text-foreground">
+              {offset + paginatedNotifications.length}
+            </span>
+          </p>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setPage((p) => Math.max(0, p - 1))
+                setExpandedId(null)
+              }}
+              disabled={!hasPrevPage}
+              className="h-8 rounded-xl text-xs font-bold gap-1 cursor-pointer"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              <span>Previous</span>
+            </Button>
+
+            <span className="text-xs font-bold px-2 text-muted-foreground">
+              Page {page + 1}
+            </span>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setPage((p) => p + 1)
+                setExpandedId(null)
+              }}
+              disabled={!hasNextPage}
+              className="h-8 rounded-xl text-xs font-bold gap-1 cursor-pointer"
+            >
+              <span>Next</span>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
       )}
 
