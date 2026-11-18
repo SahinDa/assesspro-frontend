@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '../services/notificationService';
 import { notificationKeys } from './notification.keys';
 import type { ApiResponse } from '@/types/api.types';
-import {
+import type {
     createAnnouncementInput,
     createAnnouncementResponse,
     removeNotificationParams,

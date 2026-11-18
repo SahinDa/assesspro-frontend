@@ -58,21 +58,43 @@ export default function CreateAnnouncementModal({
       setError('Message must be at least 5 characters.')
       return
     }
+    if (!isAdmin && !orgId) {
+      setError('Active organization not found. Please reload and try again.')
+      return
+    }
 
-    await onSubmit({
-      orgId: isAdmin ? null : orgId,
-      is_global: true,
-      subject: subject.trim(),
-      message: message.trim(),
-      url: url.trim() || undefined,
-      isPinned,
-    })
+    const trimmedUrl = url.trim()
+    if (trimmedUrl) {
+      try {
+        new URL(trimmedUrl)
+      } catch {
+        setError('Please enter a valid URL starting with http:// or https://')
+        return
+      }
+    }
 
-    setSubject('')
-    setMessage('')
-    setUrl('')
-    setIsPinned(false)
-    setOpen(false)
+    try {
+      await onSubmit({
+        orgId: isAdmin ? null : orgId,
+        is_global: true,
+        subject: subject.trim(),
+        message: message.trim(),
+        url: trimmedUrl || undefined,
+        isPinned,
+      })
+
+      setSubject('')
+      setMessage('')
+      setUrl('')
+      setIsPinned(false)
+      setOpen(false)
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          'Failed to publish announcement.'
+      )
+    }
   }
 
   return (
@@ -140,7 +162,7 @@ export default function CreateAnnouncementModal({
             </Label>
             <Input
               id="ann-url"
-              type="url"
+              type="text"
               placeholder="https://..."
               value={url}
               onChange={(e) => setUrl(e.target.value)}

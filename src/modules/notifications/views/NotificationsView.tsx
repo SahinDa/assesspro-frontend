@@ -22,6 +22,7 @@ import {
 import { useActiveOrgId } from '@/hooks/useActiveOrgId'
 import { UserRole, NotificationFilterEnum } from '@/config/enums'
 import { useNotificationQueries } from '../api/useNotificationQueries'
+import { useCreateAnnouncement } from '../api/useNotificationMutation'
 
 const PAGE_LIMIT = 20
 
@@ -41,6 +42,7 @@ export default function NotificationsView({
   const { orgId, isAdmin, isOrganization } = useActiveOrgId(propOrgId)
   const [page, setPage] = useState(0)
   const offset = page * PAGE_LIMIT
+  const createMutation = useCreateAnnouncement()
 
   const role = isAdmin
     ? UserRole.ADMIN
@@ -82,6 +84,25 @@ export default function NotificationsView({
     }))
   }, [rawNotifications, readIds])
 
+  const handleCreateAnnouncement = async (payload: {
+    orgId: string | null
+    is_global: true
+    subject: string
+    message: string
+    url?: string
+    isPinned: boolean
+  }) => {
+    await createMutation.mutateAsync({
+      orgId: payload.orgId,
+      is_global: payload.is_global,
+      subject: payload.subject,
+      message: payload.message,
+      url: payload.url,
+      isPinned: payload.isPinned,
+    })
+    setPage(0)
+  }
+  
   const toggleExpand = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id))
     setReadIds((prev) => {
@@ -106,15 +127,6 @@ export default function NotificationsView({
     setExpandedId(null)
   }
 
-  // Step 2: wire useCreateAnnouncement here
-  const handleCreateAnnouncement = (_payload: {
-    orgId: string | null
-    is_global: true
-    subject: string
-    message: string
-    url?: string
-    isPinned: boolean
-  }) => {}
 
   // Step 3: wire useRemoveNotification here
   const handleDelete = (e: React.MouseEvent, _id: string) => {
@@ -185,14 +197,14 @@ export default function NotificationsView({
         </div>
         <Separator />
       </header>
-      {role !== null && (
-        <CreateAnnouncementModal
-          role={role}
-          orgId={orgId ?? null}
-          onSubmit={handleCreateAnnouncement}
-        // isSubmitting={createMutation.isPending}
-        />
-      )}
+      {role !== null && !readOnly && (
+  <CreateAnnouncementModal
+    role={role}
+    orgId={orgId ?? null}
+    onSubmit={handleCreateAnnouncement}
+    isSubmitting={createMutation.isPending}
+  />
+)}
 
       {/* 2. Filter Toolbar */}
       <Card className="rounded-2xl shadow-xs border-border">
