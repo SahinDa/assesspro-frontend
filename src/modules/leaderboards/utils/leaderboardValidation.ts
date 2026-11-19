@@ -3,12 +3,16 @@ import { z } from 'zod'
 export interface LeaderboardRow {
   rank: number
   attempt_id: string
+  test_id: string
+  test_name: string
+  testset_id: string
+  testset_name: string
   user_id: string
   score: number
   violation_score: number
   duration_seconds: number
   firstname: string
-  lastname: string
+  lastname: string | null
   email: string
   profile_pic: string | null
 }

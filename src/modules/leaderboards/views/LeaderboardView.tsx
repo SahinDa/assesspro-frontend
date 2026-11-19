@@ -54,55 +54,61 @@ const MOCK_TEST_SETS: Record<string, { id: string; title: string }[]> = {
 const MOCK_DATA: Record<string, LeaderboardRow[]> = {
   // Contests
   'c-101': [
-    { rank: 1, attempt_id: 'a-1', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 495, violation_score: 0, duration_seconds: 3100 },
-    { rank: 2, attempt_id: 'a-2', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 480, violation_score: 0, duration_seconds: 3250 },
-    { rank: 3, attempt_id: 'a-3', user_id: 'u-3', firstname: 'Rohan', lastname: 'Verma', email: 'rohan.v@example.com', profile_pic: null, score: 465, violation_score: 0, duration_seconds: 3400 },
-    { rank: 4, attempt_id: 'a-4', user_id: 'u-4', firstname: 'Sneha', lastname: 'Roy', email: 'sneha.roy@example.com', profile_pic: null, score: 440, violation_score: 0, duration_seconds: 3620 },
-    { rank: 5, attempt_id: 'a-5', user_id: 'u-5', firstname: 'Vikram', lastname: 'Das', email: 'vikram.das@example.com', profile_pic: null, score: 420, violation_score: 1, duration_seconds: 3750 },
+    { rank: 1, attempt_id: 'a-1', test_id: 'c-101', test_name: 'National Coding Grand Prix 2026 - Phase 1 Assessment', testset_id: 'cs-101-1', testset_name: 'Qualifier Round A', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 495, violation_score: 0, duration_seconds: 3100 },
+    { rank: 2, attempt_id: 'a-2', test_id: 'c-101', test_name: 'National Coding Grand Prix 2026 - Phase 1 Assessment', testset_id: 'cs-101-1', testset_name: 'Qualifier Round A', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 480, violation_score: 0, duration_seconds: 3250 },
+    { rank: 3, attempt_id: 'a-3', test_id: 'c-101', test_name: 'National Coding Grand Prix 2026 - Phase 1 Assessment', testset_id: 'cs-101-1', testset_name: 'Qualifier Round A', user_id: 'u-3', firstname: 'Rohan', lastname: 'Verma', email: 'rohan.v@example.com', profile_pic: null, score: 465, violation_score: 0, duration_seconds: 3400 },
+    { rank: 4, attempt_id: 'a-4', test_id: 'c-101', test_name: 'National Coding Grand Prix 2026 - Phase 1 Assessment', testset_id: 'cs-101-1', testset_name: 'Qualifier Round A', user_id: 'u-4', firstname: 'Sneha', lastname: 'Roy', email: 'sneha.roy@example.com', profile_pic: null, score: 440, violation_score: 0, duration_seconds: 3620 },
+    { rank: 5, attempt_id: 'a-5', test_id: 'c-101', test_name: 'National Coding Grand Prix 2026 - Phase 1 Assessment', testset_id: 'cs-101-1', testset_name: 'Qualifier Round A', user_id: 'u-5', firstname: 'Vikram', lastname: 'Das', email: 'vikram.das@example.com', profile_pic: null, score: 420, violation_score: 1, duration_seconds: 3750 },
   ],
   'c-102': [
-    { rank: 1, attempt_id: 'a-8', user_id: 'u-8', firstname: 'Dev', lastname: 'Gupta', email: 'dev.g@example.com', profile_pic: null, score: 290, violation_score: 0, duration_seconds: 1800 },
-    { rank: 2, attempt_id: 'a-9', user_id: 'u-9', firstname: 'Maya', lastname: 'Sen', email: 'maya.s@example.com', profile_pic: null, score: 275, violation_score: 0, duration_seconds: 1950 },
-    { rank: 3, attempt_id: 'a-10', user_id: 'u-10', firstname: 'Kabir', lastname: 'Nair', email: 'kabir.n@example.com', profile_pic: null, score: 260, violation_score: 0, duration_seconds: 2100 },
-    { rank: 4, attempt_id: 'a-11', user_id: 'u-11', firstname: 'Siddharth', lastname: 'Rao', email: 'sid.r@example.com', profile_pic: null, score: 245, violation_score: 0, duration_seconds: 2250 },
+    { rank: 1, attempt_id: 'a-8', test_id: 'c-102', test_name: 'Full Stack Engineering Hackathon Championship Finals', testset_id: 'cs-102-1', testset_name: 'Final Build Sprint', user_id: 'u-8', firstname: 'Dev', lastname: 'Gupta', email: 'dev.g@example.com', profile_pic: null, score: 290, violation_score: 0, duration_seconds: 1800 },
+    { rank: 2, attempt_id: 'a-9', test_id: 'c-102', test_name: 'Full Stack Engineering Hackathon Championship Finals', testset_id: 'cs-102-1', testset_name: 'Final Build Sprint', user_id: 'u-9', firstname: 'Maya', lastname: 'Sen', email: 'maya.s@example.com', profile_pic: null, score: 275, violation_score: 0, duration_seconds: 1950 },
+    { rank: 3, attempt_id: 'a-10', test_id: 'c-102', test_name: 'Full Stack Engineering Hackathon Championship Finals', testset_id: 'cs-102-1', testset_name: 'Final Build Sprint', user_id: 'u-10', firstname: 'Kabir', lastname: 'Nair', email: 'kabir.n@example.com', profile_pic: null, score: 260, violation_score: 0, duration_seconds: 2100 },
+    { rank: 4, attempt_id: 'a-11', test_id: 'c-102', test_name: 'Full Stack Engineering Hackathon Championship Finals', testset_id: 'cs-102-1', testset_name: 'Final Build Sprint', user_id: 'u-11', firstname: 'Siddharth', lastname: 'Rao', email: 'sid.r@example.com', profile_pic: null, score: 245, violation_score: 0, duration_seconds: 2250 },
   ],
 
-  // Standings: All Tests Aggregated Overview
+  // Standings: All Tests Overview (individual attempt rows across tests & test sets)
   'test-all': [
-    { rank: 1, attempt_id: 'a-all-1', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 980, violation_score: 0, duration_seconds: 18200 },
-    { rank: 2, attempt_id: 'a-all-2', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 955, violation_score: 0, duration_seconds: 17400 },
-    { rank: 3, attempt_id: 'a-all-3', user_id: 'u-4', firstname: 'Sneha', lastname: 'Roy', email: 'sneha.roy@example.com', profile_pic: null, score: 920, violation_score: 1, duration_seconds: 19100 },
-    { rank: 4, attempt_id: 'a-all-4', user_id: 'u-5', firstname: 'Vikram', lastname: 'Das', email: 'vikram.das@example.com', profile_pic: null, score: 890, violation_score: 2, duration_seconds: 20400 },
+    { rank: 1, attempt_id: 'a-15', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-1', testset_name: 'Arrays & Dynamic Programming Track', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 100, violation_score: 0, duration_seconds: 2300 },
+    { rank: 2, attempt_id: 'a-21', test_id: 't-102', test_name: 'System Architecture & Database Design', testset_id: 'ts-102-1', testset_name: 'Distributed Systems & Microservices Track', user_id: 'u-4', firstname: 'Sneha', lastname: 'Roy', email: 'sneha.roy@example.com', profile_pic: null, score: 98, violation_score: 0, duration_seconds: 2200 },
+    { rank: 3, attempt_id: 'a-18', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-2', testset_name: 'Trees & Graph Traversal Track', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 95, violation_score: 0, duration_seconds: 2500 },
+    { rank: 4, attempt_id: 'a-16', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-1', testset_name: 'Arrays & Dynamic Programming Track', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 94, violation_score: 0, duration_seconds: 2450 },
+    { rank: 5, attempt_id: 'a-17', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-2', testset_name: 'Trees & Graph Traversal Track', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 94, violation_score: 0, duration_seconds: 2500 },
+    { rank: 6, attempt_id: 'a-22', test_id: 't-102', test_name: 'System Architecture & Database Design', testset_id: 'ts-102-2', testset_name: 'SQL & Query Optimization Track', user_id: 'u-5', firstname: 'Vikram', lastname: 'Das', email: 'vikram.das@example.com', profile_pic: null, score: 92, violation_score: 0, duration_seconds: 2600 },
   ],
 
-  // Single Test: t-101 All Sets
+  // Single Test: t-101 All Sets (individual attempts across t-101 sets)
   't-101': [
-    { rank: 1, attempt_id: 'a-12', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 195, violation_score: 0, duration_seconds: 4800 },
-    { rank: 2, attempt_id: 'a-13', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 188, violation_score: 0, duration_seconds: 4950 },
-    { rank: 3, attempt_id: 'a-14', user_id: 'u-3', firstname: 'Rohan', lastname: 'Verma', email: 'rohan.v@example.com', profile_pic: null, score: 175, violation_score: 1, duration_seconds: 5300 },
+    { rank: 1, attempt_id: 'a-15', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-1', testset_name: 'Arrays & Dynamic Programming Track', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 100, violation_score: 0, duration_seconds: 2300 },
+    { rank: 2, attempt_id: 'a-18', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-2', testset_name: 'Trees & Graph Traversal Track', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 95, violation_score: 0, duration_seconds: 2500 },
+    { rank: 3, attempt_id: 'a-16', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-1', testset_name: 'Arrays & Dynamic Programming Track', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 94, violation_score: 0, duration_seconds: 2450 },
+    { rank: 4, attempt_id: 'a-17', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-2', testset_name: 'Trees & Graph Traversal Track', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 94, violation_score: 0, duration_seconds: 2500 },
+    { rank: 5, attempt_id: 'a-14', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-1', testset_name: 'Arrays & Dynamic Programming Track', user_id: 'u-3', firstname: 'Rohan', lastname: 'Verma', email: 'rohan.v@example.com', profile_pic: null, score: 88, violation_score: 1, duration_seconds: 2700 },
   ],
   // Specific Test Sets under t-101
   'ts-101-1': [
-    { rank: 1, attempt_id: 'a-15', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 100, violation_score: 0, duration_seconds: 2300 },
-    { rank: 2, attempt_id: 'a-16', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 94, violation_score: 0, duration_seconds: 2450 },
+    { rank: 1, attempt_id: 'a-15', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-1', testset_name: 'Arrays & Dynamic Programming Track', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 100, violation_score: 0, duration_seconds: 2300 },
+    { rank: 2, attempt_id: 'a-16', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-1', testset_name: 'Arrays & Dynamic Programming Track', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 94, violation_score: 0, duration_seconds: 2450 },
+    { rank: 3, attempt_id: 'a-14', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-1', testset_name: 'Arrays & Dynamic Programming Track', user_id: 'u-3', firstname: 'Rohan', lastname: 'Verma', email: 'rohan.v@example.com', profile_pic: null, score: 88, violation_score: 1, duration_seconds: 2700 },
   ],
   'ts-101-2': [
-    { rank: 1, attempt_id: 'a-17', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 94, violation_score: 0, duration_seconds: 2500 },
-    { rank: 2, attempt_id: 'a-18', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 95, violation_score: 0, duration_seconds: 2500 },
+    { rank: 1, attempt_id: 'a-18', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-2', testset_name: 'Trees & Graph Traversal Track', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 95, violation_score: 0, duration_seconds: 2500 },
+    { rank: 2, attempt_id: 'a-17', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-2', testset_name: 'Trees & Graph Traversal Track', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 94, violation_score: 0, duration_seconds: 2500 },
   ],
 
   // Single Test: t-102 All Sets
   't-102': [
-    { rank: 1, attempt_id: 'a-19', user_id: 'u-4', firstname: 'Sneha', lastname: 'Roy', email: 'sneha.roy@example.com', profile_pic: null, score: 190, violation_score: 0, duration_seconds: 4500 },
-    { rank: 2, attempt_id: 'a-20', user_id: 'u-5', firstname: 'Vikram', lastname: 'Das', email: 'vikram.das@example.com', profile_pic: null, score: 182, violation_score: 1, duration_seconds: 4800 },
+    { rank: 1, attempt_id: 'a-21', test_id: 't-102', test_name: 'System Architecture & Database Design', testset_id: 'ts-102-1', testset_name: 'Distributed Systems & Microservices Track', user_id: 'u-4', firstname: 'Sneha', lastname: 'Roy', email: 'sneha.roy@example.com', profile_pic: null, score: 98, violation_score: 0, duration_seconds: 2200 },
+    { rank: 2, attempt_id: 'a-22', test_id: 't-102', test_name: 'System Architecture & Database Design', testset_id: 'ts-102-2', testset_name: 'SQL & Query Optimization Track', user_id: 'u-5', firstname: 'Vikram', lastname: 'Das', email: 'vikram.das@example.com', profile_pic: null, score: 92, violation_score: 0, duration_seconds: 2600 },
   ],
   'ts-102-1': [
-    { rank: 1, attempt_id: 'a-21', user_id: 'u-4', firstname: 'Sneha', lastname: 'Roy', email: 'sneha.roy@example.com', profile_pic: null, score: 98, violation_score: 0, duration_seconds: 2200 },
+    { rank: 1, attempt_id: 'a-21', test_id: 't-102', test_name: 'System Architecture & Database Design', testset_id: 'ts-102-1', testset_name: 'Distributed Systems & Microservices Track', user_id: 'u-4', firstname: 'Sneha', lastname: 'Roy', email: 'sneha.roy@example.com', profile_pic: null, score: 98, violation_score: 0, duration_seconds: 2200 },
   ],
   'ts-102-2': [
-    { rank: 1, attempt_id: 'a-22', user_id: 'u-5', firstname: 'Vikram', lastname: 'Das', email: 'vikram.das@example.com', profile_pic: null, score: 92, violation_score: 0, duration_seconds: 2600 },
+    { rank: 1, attempt_id: 'a-22', test_id: 't-102', test_name: 'System Architecture & Database Design', testset_id: 'ts-102-2', testset_name: 'SQL & Query Optimization Track', user_id: 'u-5', firstname: 'Vikram', lastname: 'Das', email: 'vikram.das@example.com', profile_pic: null, score: 92, violation_score: 0, duration_seconds: 2600 },
   ],
 }
+
 
 export interface LeaderboardViewProps {
   userRole?: UserRoleType
@@ -392,7 +398,11 @@ export default function LeaderboardView({
       </div>
 
       {/* 5. Paginated Rankings Table */}
-      <LeaderboardTable rankings={displayedTableList} />
+      <LeaderboardTable
+        rankings={displayedTableList}
+        showTestColumn={!isContestSection && selectedTestId === 'all'}
+        showTestSetColumn={!isContestSection && selectedSetId === 'all'}
+      />
     </div>
   )
 }

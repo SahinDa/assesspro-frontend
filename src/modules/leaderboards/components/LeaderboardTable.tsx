@@ -17,9 +17,16 @@ import { type LeaderboardRow, formatDuration } from '../utils/leaderboardValidat
 interface LeaderboardTableProps {
   rankings: LeaderboardRow[]
   currentUserId?: string
+  showTestColumn?: boolean
+  showTestSetColumn?: boolean
 }
 
-export default function LeaderboardTable({ rankings, currentUserId }: LeaderboardTableProps) {
+export default function LeaderboardTable({
+  rankings,
+  currentUserId,
+  showTestColumn = false,
+  showTestSetColumn = false,
+}: LeaderboardTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 10
   const totalPages = Math.max(1, Math.ceil(rankings.length / pageSize))
@@ -29,6 +36,7 @@ export default function LeaderboardTable({ rankings, currentUserId }: Leaderboar
   }, [rankings.length])
 
   const paginatedList = rankings.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  const showAssessmentColumn = showTestColumn || showTestSetColumn
 
   if (rankings.length === 0) {
     return (
@@ -48,6 +56,11 @@ export default function LeaderboardTable({ rankings, currentUserId }: Leaderboar
             <TableRow className="border-slate-200/80 hover:bg-transparent">
               <TableHead className="w-16 text-center text-xs font-bold text-slate-700 uppercase">Rank</TableHead>
               <TableHead className="text-xs font-bold text-slate-700 uppercase">Candidate</TableHead>
+              {showAssessmentColumn && (
+                <TableHead className="text-xs font-bold text-slate-700 uppercase">
+                  {showTestColumn ? 'Assessment' : 'Test Set'}
+                </TableHead>
+              )}
               <TableHead className="text-xs font-bold text-slate-700 uppercase">Score</TableHead>
               <TableHead className="text-xs font-bold text-slate-700 uppercase">Time Taken</TableHead>
               <TableHead className="text-xs font-bold text-slate-700 uppercase">Integrity</TableHead>
@@ -57,10 +70,13 @@ export default function LeaderboardTable({ rankings, currentUserId }: Leaderboar
             {paginatedList.map((entry) => {
               const isCurrentUser = currentUserId && entry.user_id === currentUserId
               const hasViolations = entry.violation_score > 0
+              const firstName = entry.firstname ?? ''
+              const lastName = entry.lastname ?? ''
+              const initial = (firstName || entry.email || 'U').charAt(0).toUpperCase()
 
               return (
                 <TableRow
-                  key={entry.user_id + entry.rank}
+                  key={entry.attempt_id || `${entry.user_id}-${entry.rank}`}
                   className={`transition-colors ${
                     isCurrentUser ? 'bg-indigo-50/60 font-semibold' : 'hover:bg-slate-50/60'
                   }`}
@@ -79,14 +95,18 @@ export default function LeaderboardTable({ rankings, currentUserId }: Leaderboar
                   <TableCell className="py-3">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-9 w-9 rounded-full border border-slate-200 shrink-0 overflow-hidden aspect-square">
-                        <AvatarImage className="rounded-full object-cover w-full h-full aspect-square" src={entry.profile_pic ?? undefined} alt={entry.firstname} />
+                        <AvatarImage
+                          className="rounded-full object-cover w-full h-full aspect-square"
+                          src={entry.profile_pic ?? undefined}
+                          alt={firstName || entry.email}
+                        />
                         <AvatarFallback className="h-full w-full rounded-full bg-indigo-100 text-indigo-900 text-xs font-bold flex items-center justify-center aspect-square">
-                          {entry.firstname.charAt(0).toUpperCase()}
+                          {initial}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="min-w-0 max-w-[200px] sm:max-w-[260px]">
+                      <div className="min-w-0 max-w-[200px] sm:max-w-[240px]">
                         <div className="truncate font-bold text-slate-900 text-sm">
-                          {entry.firstname} {entry.lastname} {isCurrentUser && '(You)'}
+                          {firstName} {lastName} {isCurrentUser && '(You)'}
                         </div>
                         <div className="text-xs text-slate-500 font-normal truncate">
                           {entry.email}
@@ -94,6 +114,30 @@ export default function LeaderboardTable({ rankings, currentUserId }: Leaderboar
                       </div>
                     </div>
                   </TableCell>
+
+                  {/* Assessment / Test Set */}
+                  {showAssessmentColumn && (
+                    <TableCell className="py-3">
+                      <div className="flex flex-col gap-0.5 max-w-[220px]">
+                        {showTestColumn && (
+                          <span className="truncate font-semibold text-slate-900 text-xs">
+                            {entry.test_name}
+                          </span>
+                        )}
+                        {showTestSetColumn && (
+                          <span
+                            className={`truncate ${
+                              showTestColumn
+                                ? 'text-[11px] font-normal text-slate-500'
+                                : 'text-xs font-semibold text-slate-800'
+                            }`}
+                          >
+                            {entry.testset_name}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                  )}
 
                   {/* Score */}
                   <TableCell className="py-3 font-black text-slate-900 text-sm">
