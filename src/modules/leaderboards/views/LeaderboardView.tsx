@@ -8,6 +8,7 @@ import {
   Users,
   X,
   Sparkles,
+  Loader2,
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { UserRole, type UserRoleType } from '@/config/enums'
@@ -23,10 +24,9 @@ import {
 } from '@/components/ui/select'
 import LeaderboardPodium from '../components/LeaderboardPodium'
 import LeaderboardTable from '../components/LeaderboardTable'
-import {
-  type LeaderboardRow,
-  type LeaderboardSection,
-} from '../utils/leaderboardValidation'
+import { type LeaderboardSection } from '../utils/leaderboardValidation'
+import { type LeaderboardRow } from '../types/leaderboard.types'
+import { useCurrentPositionsQueries } from '../api/useLeaderboardQueries'
 
 const MOCK_CONTESTS = [
   { id: 'c-101', title: 'National Coding Grand Prix 2026 - Phase 1 Assessment' },
@@ -51,8 +51,7 @@ const MOCK_TEST_SETS: Record<string, { id: string; title: string }[]> = {
   ],
 }
 
-const MOCK_DATA: Record<string, LeaderboardRow[]> = {
-  // Contests
+const MOCK_CONTEST_DATA: Record<string, LeaderboardRow[]> = {
   'c-101': [
     { rank: 1, attempt_id: 'a-1', test_id: 'c-101', test_name: 'National Coding Grand Prix 2026 - Phase 1 Assessment', testset_id: 'cs-101-1', testset_name: 'Qualifier Round A', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 495, violation_score: 0, duration_seconds: 3100 },
     { rank: 2, attempt_id: 'a-2', test_id: 'c-101', test_name: 'National Coding Grand Prix 2026 - Phase 1 Assessment', testset_id: 'cs-101-1', testset_name: 'Qualifier Round A', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 480, violation_score: 0, duration_seconds: 3250 },
@@ -66,49 +65,7 @@ const MOCK_DATA: Record<string, LeaderboardRow[]> = {
     { rank: 3, attempt_id: 'a-10', test_id: 'c-102', test_name: 'Full Stack Engineering Hackathon Championship Finals', testset_id: 'cs-102-1', testset_name: 'Final Build Sprint', user_id: 'u-10', firstname: 'Kabir', lastname: 'Nair', email: 'kabir.n@example.com', profile_pic: null, score: 260, violation_score: 0, duration_seconds: 2100 },
     { rank: 4, attempt_id: 'a-11', test_id: 'c-102', test_name: 'Full Stack Engineering Hackathon Championship Finals', testset_id: 'cs-102-1', testset_name: 'Final Build Sprint', user_id: 'u-11', firstname: 'Siddharth', lastname: 'Rao', email: 'sid.r@example.com', profile_pic: null, score: 245, violation_score: 0, duration_seconds: 2250 },
   ],
-
-  // Standings: All Tests Overview (individual attempt rows across tests & test sets)
-  'test-all': [
-    { rank: 1, attempt_id: 'a-15', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-1', testset_name: 'Arrays & Dynamic Programming Track', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 100, violation_score: 0, duration_seconds: 2300 },
-    { rank: 2, attempt_id: 'a-21', test_id: 't-102', test_name: 'System Architecture & Database Design', testset_id: 'ts-102-1', testset_name: 'Distributed Systems & Microservices Track', user_id: 'u-4', firstname: 'Sneha', lastname: 'Roy', email: 'sneha.roy@example.com', profile_pic: null, score: 98, violation_score: 0, duration_seconds: 2200 },
-    { rank: 3, attempt_id: 'a-18', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-2', testset_name: 'Trees & Graph Traversal Track', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 95, violation_score: 0, duration_seconds: 2500 },
-    { rank: 4, attempt_id: 'a-16', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-1', testset_name: 'Arrays & Dynamic Programming Track', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 94, violation_score: 0, duration_seconds: 2450 },
-    { rank: 5, attempt_id: 'a-17', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-2', testset_name: 'Trees & Graph Traversal Track', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 94, violation_score: 0, duration_seconds: 2500 },
-    { rank: 6, attempt_id: 'a-22', test_id: 't-102', test_name: 'System Architecture & Database Design', testset_id: 'ts-102-2', testset_name: 'SQL & Query Optimization Track', user_id: 'u-5', firstname: 'Vikram', lastname: 'Das', email: 'vikram.das@example.com', profile_pic: null, score: 92, violation_score: 0, duration_seconds: 2600 },
-  ],
-
-  // Single Test: t-101 All Sets (individual attempts across t-101 sets)
-  't-101': [
-    { rank: 1, attempt_id: 'a-15', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-1', testset_name: 'Arrays & Dynamic Programming Track', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 100, violation_score: 0, duration_seconds: 2300 },
-    { rank: 2, attempt_id: 'a-18', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-2', testset_name: 'Trees & Graph Traversal Track', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 95, violation_score: 0, duration_seconds: 2500 },
-    { rank: 3, attempt_id: 'a-16', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-1', testset_name: 'Arrays & Dynamic Programming Track', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 94, violation_score: 0, duration_seconds: 2450 },
-    { rank: 4, attempt_id: 'a-17', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-2', testset_name: 'Trees & Graph Traversal Track', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 94, violation_score: 0, duration_seconds: 2500 },
-    { rank: 5, attempt_id: 'a-14', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-1', testset_name: 'Arrays & Dynamic Programming Track', user_id: 'u-3', firstname: 'Rohan', lastname: 'Verma', email: 'rohan.v@example.com', profile_pic: null, score: 88, violation_score: 1, duration_seconds: 2700 },
-  ],
-  // Specific Test Sets under t-101
-  'ts-101-1': [
-    { rank: 1, attempt_id: 'a-15', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-1', testset_name: 'Arrays & Dynamic Programming Track', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 100, violation_score: 0, duration_seconds: 2300 },
-    { rank: 2, attempt_id: 'a-16', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-1', testset_name: 'Arrays & Dynamic Programming Track', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 94, violation_score: 0, duration_seconds: 2450 },
-    { rank: 3, attempt_id: 'a-14', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-1', testset_name: 'Arrays & Dynamic Programming Track', user_id: 'u-3', firstname: 'Rohan', lastname: 'Verma', email: 'rohan.v@example.com', profile_pic: null, score: 88, violation_score: 1, duration_seconds: 2700 },
-  ],
-  'ts-101-2': [
-    { rank: 1, attempt_id: 'a-18', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-2', testset_name: 'Trees & Graph Traversal Track', user_id: 'u-1', firstname: 'Aarav', lastname: 'Sharma', email: 'aarav.sharma@example.com', profile_pic: null, score: 95, violation_score: 0, duration_seconds: 2500 },
-    { rank: 2, attempt_id: 'a-17', test_id: 't-101', test_name: 'Data Structures & Algorithms', testset_id: 'ts-101-2', testset_name: 'Trees & Graph Traversal Track', user_id: 'u-2', firstname: 'Priya', lastname: 'Mukherjee', email: 'priya.m@example.com', profile_pic: null, score: 94, violation_score: 0, duration_seconds: 2500 },
-  ],
-
-  // Single Test: t-102 All Sets
-  't-102': [
-    { rank: 1, attempt_id: 'a-21', test_id: 't-102', test_name: 'System Architecture & Database Design', testset_id: 'ts-102-1', testset_name: 'Distributed Systems & Microservices Track', user_id: 'u-4', firstname: 'Sneha', lastname: 'Roy', email: 'sneha.roy@example.com', profile_pic: null, score: 98, violation_score: 0, duration_seconds: 2200 },
-    { rank: 2, attempt_id: 'a-22', test_id: 't-102', test_name: 'System Architecture & Database Design', testset_id: 'ts-102-2', testset_name: 'SQL & Query Optimization Track', user_id: 'u-5', firstname: 'Vikram', lastname: 'Das', email: 'vikram.das@example.com', profile_pic: null, score: 92, violation_score: 0, duration_seconds: 2600 },
-  ],
-  'ts-102-1': [
-    { rank: 1, attempt_id: 'a-21', test_id: 't-102', test_name: 'System Architecture & Database Design', testset_id: 'ts-102-1', testset_name: 'Distributed Systems & Microservices Track', user_id: 'u-4', firstname: 'Sneha', lastname: 'Roy', email: 'sneha.roy@example.com', profile_pic: null, score: 98, violation_score: 0, duration_seconds: 2200 },
-  ],
-  'ts-102-2': [
-    { rank: 1, attempt_id: 'a-22', test_id: 't-102', test_name: 'System Architecture & Database Design', testset_id: 'ts-102-2', testset_name: 'SQL & Query Optimization Track', user_id: 'u-5', firstname: 'Vikram', lastname: 'Das', email: 'vikram.das@example.com', profile_pic: null, score: 92, violation_score: 0, duration_seconds: 2600 },
-  ],
 }
-
 
 export interface LeaderboardViewProps {
   userRole?: UserRoleType
@@ -117,7 +74,7 @@ export interface LeaderboardViewProps {
 
 export default function LeaderboardView({
   userRole = UserRole.ORGANIZATION,
-  orgId: _orgId,
+  orgId,
 }: LeaderboardViewProps = {}) {
   const [section, setSection] = useState<LeaderboardSection>('contest')
   const [selectedContestId, setSelectedContestId] = useState<string>(MOCK_CONTESTS[0].id)
@@ -130,27 +87,41 @@ export default function LeaderboardView({
   // Default for test sets is "all"
   const [selectedSetId, setSelectedSetId] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 10
 
   const isContestSection = section === 'contest'
+
+  // Live API call for Current Position tab
+  const {
+    data: currentPositionResponse,
+    isLoading: isCurrentPositionLoading,
+    isError: isCurrentPositionError,
+  } = useCurrentPositionsQueries(
+    {
+      test_id: selectedTestId !== 'all' ? selectedTestId : undefined,
+      testset_id: selectedSetId !== 'all' ? selectedSetId : undefined,
+      limit: pageSize,
+      offset: (currentPage - 1) * pageSize,
+    },
+    orgId,
+  )
 
   // Determine available child test sets
   const availableTestSets = selectedTestId !== 'all' ? MOCK_TEST_SETS[selectedTestId] || [] : []
 
-  // Resolve raw data key
+  // Resolve raw data list (mock for Contests, live API for Current Position)
   const rawList = useMemo(() => {
     if (isContestSection) {
-      return MOCK_DATA[selectedContestId] || []
+      return MOCK_CONTEST_DATA[selectedContestId] || []
     }
-    if (selectedTestId === 'all') {
-      return MOCK_DATA['test-all'] || []
-    }
-    if (selectedSetId === 'all') {
-      return MOCK_DATA[selectedTestId] || []
-    }
-    return MOCK_DATA[selectedSetId] || []
-  }, [isContestSection, selectedContestId, selectedTestId, selectedSetId])
+    return currentPositionResponse?.data ?? []
+  }, [isContestSection, selectedContestId, currentPositionResponse])
 
-  const totalParticipants = rawList.length
+  const totalParticipants = isContestSection
+    ? rawList.length
+    : currentPositionResponse?.meta.total_items ?? 0
+
   const topThree = rawList.slice(0, 3)
 
   // Title resolvers for custom select label rendering
@@ -171,8 +142,13 @@ export default function LeaderboardView({
   const displayedTableList = searchQuery
     ? rawList.filter((entry) => {
         const q = searchQuery.toLowerCase().trim()
-        const fullName = `${entry.firstname} ${entry.lastname}`.toLowerCase()
-        return fullName.includes(q) || entry.email.toLowerCase().includes(q)
+        const fullName = `${entry.firstname ?? ''} ${entry.lastname ?? ''}`.toLowerCase()
+        return (
+          fullName.includes(q) ||
+          entry.email.toLowerCase().includes(q) ||
+          entry.test_name?.toLowerCase().includes(q) ||
+          entry.testset_name?.toLowerCase().includes(q)
+        )
       })
     : isContestSection
     ? rawList.slice(3)
@@ -281,6 +257,7 @@ export default function LeaderboardView({
                     onValueChange={(val) => {
                       setSelectedTestId(val ?? 'all')
                       setSelectedSetId('all')
+                      setCurrentPage(1)
                       setSearchQuery('')
                     }}
                   >
@@ -312,6 +289,7 @@ export default function LeaderboardView({
                       value={selectedSetId}
                       onValueChange={(val) => {
                         setSelectedSetId(val ?? 'all')
+                        setCurrentPage(1)
                         setSearchQuery('')
                       }}
                     >
@@ -398,11 +376,23 @@ export default function LeaderboardView({
       </div>
 
       {/* 5. Paginated Rankings Table */}
-      <LeaderboardTable
-        rankings={displayedTableList}
-        showTestColumn={!isContestSection && selectedTestId === 'all'}
-        showTestSetColumn={!isContestSection && selectedSetId === 'all'}
-      />
+      {!isContestSection && isCurrentPositionLoading ? (
+        <Card className="py-12 px-4 border-slate-200 bg-white shadow-xs rounded-2xl flex flex-col items-center justify-center gap-2 text-slate-500">
+          <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+          <div className="text-xs font-medium">Loading standings...</div>
+        </Card>
+      ) : !isContestSection && isCurrentPositionError ? (
+        <Card className="py-12 px-4 border-rose-200 bg-rose-50/40 shadow-none rounded-2xl text-center space-y-1">
+          <div className="text-sm font-bold text-rose-700">Failed to load standings</div>
+          <div className="text-xs text-rose-600">Please try refreshing or switching filters.</div>
+        </Card>
+      ) : (
+        <LeaderboardTable
+          rankings={displayedTableList}
+          showTestColumn={!isContestSection && selectedTestId === 'all'}
+          showTestSetColumn={!isContestSection && selectedSetId === 'all'}
+        />
+      )}
     </div>
   )
 }
