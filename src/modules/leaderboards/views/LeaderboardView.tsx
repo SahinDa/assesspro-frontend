@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Search,
   FileText,
@@ -25,7 +25,11 @@ import LeaderboardPodium from '../components/LeaderboardPodium'
 import LeaderboardTable from '../components/LeaderboardTable'
 import { type LeaderboardSection } from '../utils/leaderboardValidation'
 import { type LeaderboardRow } from '../types/leaderboard.types'
-import { useCurrentPositionsQueries, useLeaderboardOptions } from '../api/useLeaderboardQueries'
+import {
+  useCurrentPositionsQueries,
+  useLeaderboardOptions,
+  useLeaderboardSearch,
+} from '../api/useLeaderboardQueries'
 
 const MOCK_CONTESTS = [
   { id: 'c-101', title: 'National Coding Grand Prix 2026 - Phase 1 Assessment' },
@@ -68,12 +72,38 @@ export default function LeaderboardView({
   // Default for test sets is "all"
   const [selectedSetId, setSelectedSetId] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [appliedSearch, setAppliedSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 10
 
-  const isContestSection = section === 'contest'
+  // Commit search immediately (used by Enter key and debounce timer)
+  const applySearch = (value: string) => {
+    const trimmed = value.trim()
+    setAppliedSearch((prev) => {
+      if (prev !== trimmed) setCurrentPage(1)
+      return trimmed
+    })
+  }
 
-  // Live API call for Current Position tab
+  // Auto-trigger 500ms after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      applySearch(searchQuery)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  const clearSearch = () => {
+    setSearchQuery('')
+    setAppliedSearch('')
+    setCurrentPage(1)
+  }
+
+  const isContestSection = section === 'contest'
+  const isSearching = !isContestSection && appliedSearch.length > 0
+
+  // 1. Default standings query for Current Position tab (paused while searching)
   const {
     data: currentPositionResponse,
     isLoading: isCurrentPositionLoading,
@@ -87,7 +117,24 @@ export default function LeaderboardView({
       offset: (currentPage - 1) * pageSize,
     },
     orgId,
-    { enabled: !isContestSection },
+    { enabled: !isContestSection && !isSearching },
+  )
+
+  // 2. Backend keyword search query (only fires after 500ms pause or Enter key)
+  const {
+    data: searchResponse,
+    isLoading: isSearchLoading,
+    isFetching: isSearchFetching,
+    isError: isSearchError,
+  } = useLeaderboardSearch(
+    {
+      searchKeyword: isContestSection ? '' : appliedSearch,
+      test_id: selectedTestId !== 'all' ? selectedTestId : undefined,
+      testset_id: selectedSetId !== 'all' ? selectedSetId : undefined,
+      limit: pageSize,
+      offset: (currentPage - 1) * pageSize,
+    },
+    orgId,
   )
 
   // Fetch all Tests when on Current Position tab
@@ -129,17 +176,22 @@ export default function LeaderboardView({
     )
   }, [selectedTestId, testSetOptionsResponse])
 
+  // Active API response for Current Position tab (search vs standard standings)
+  const activeStandingsResponse = isSearching
+    ? searchResponse
+    : currentPositionResponse
+
   // Resolve raw data list (mock for Contests, live API for Current Position)
   const rawList = useMemo(() => {
     if (isContestSection) {
       return MOCK_CONTEST_DATA[selectedContestId] || []
     }
-    return currentPositionResponse?.data ?? []
-  }, [isContestSection, selectedContestId, currentPositionResponse])
+    return activeStandingsResponse?.data ?? []
+  }, [isContestSection, selectedContestId, activeStandingsResponse])
 
   const totalParticipants = isContestSection
     ? rawList.length
-    : currentPositionResponse?.meta.total_items ?? 0
+    : activeStandingsResponse?.meta.total_items ?? 0
 
   const topThree = rawList.slice(0, 3)
 
@@ -157,10 +209,12 @@ export default function LeaderboardView({
       ? 'All Test Sets'
       : availableTestSets.find((ts) => ts.id === selectedSetId)?.title || 'Select test set'
 
-  // Table filtering logic
-  const displayedTableList = searchQuery
-    ? rawList.filter((entry) => {
-        const q = searchQuery.toLowerCase().trim()
+  // Table list: client-side filter only for mock Contests; server-side already filtered Current Position
+  const displayedTableList = useMemo(() => {
+    if (isContestSection) {
+      if (!searchQuery.trim()) return rawList.slice(3)
+      const q = searchQuery.toLowerCase().trim()
+      return rawList.filter((entry) => {
         const fullName = `${entry.firstname ?? ''} ${entry.lastname ?? ''}`.toLowerCase()
         return (
           fullName.includes(q) ||
@@ -169,9 +223,18 @@ export default function LeaderboardView({
           entry.testset_name?.toLowerCase().includes(q)
         )
       })
-    : isContestSection
-    ? rawList.slice(3)
-    : rawList
+    }
+    return rawList
+  }, [isContestSection, rawList, searchQuery])
+
+  const isTableLoading =
+    !isContestSection &&
+    (isSearching
+      ? isSearchLoading || isSearchFetching
+      : isCurrentPositionLoading || isCurrentPositionFetching)
+
+  const isTableError =
+    !isContestSection && (isSearching ? isSearchError : isCurrentPositionError)
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6 pb-12">
@@ -207,7 +270,7 @@ export default function LeaderboardView({
           value={section}
           onValueChange={(val) => {
             setSection(val as LeaderboardSection)
-            setSearchQuery('')
+            clearSearch()
           }}
           className="w-full sm:w-auto"
         >
@@ -248,7 +311,7 @@ export default function LeaderboardView({
                     onValueChange={(val) => {
                       if (val) {
                         setSelectedContestId(val)
-                        setSearchQuery('')
+                        clearSearch()
                       }
                     }}
                   >
@@ -277,8 +340,7 @@ export default function LeaderboardView({
                     onValueChange={(val) => {
                       setSelectedTestId(val ?? 'all')
                       setSelectedSetId('all')
-                      setCurrentPage(1)
-                      setSearchQuery('')
+                      clearSearch()
                     }}
                   >
                     <SelectTrigger className="h-10 w-full text-xs font-semibold rounded-xl border-slate-200 bg-slate-50/70 text-slate-900 hover:bg-slate-50 focus:ring-1 focus:ring-indigo-500 truncate">
@@ -310,8 +372,7 @@ export default function LeaderboardView({
                       disabled={isTestSetsLoading}
                       onValueChange={(val) => {
                         setSelectedSetId(val ?? 'all')
-                        setCurrentPage(1)
-                        setSearchQuery('')
+                        clearSearch()
                       }}
                     >
                       <SelectTrigger className="h-10 w-full text-xs font-semibold rounded-xl border-slate-200 bg-slate-50/70 text-slate-900 hover:bg-slate-50 focus:ring-1 focus:ring-indigo-500 truncate">
@@ -347,6 +408,12 @@ export default function LeaderboardView({
               placeholder="Search candidate name or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  applySearch(searchQuery)
+                }
+              }}
               className="w-full bg-transparent text-xs text-slate-900 placeholder:text-slate-400 border-none outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 shadow-none"
             />
             {searchQuery && (
@@ -354,7 +421,7 @@ export default function LeaderboardView({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setSearchQuery('')}
+                onClick={clearSearch}
                 className="h-6 w-6 p-0 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-md shrink-0 cursor-pointer"
               >
                 <X className="h-3.5 w-3.5" />
@@ -373,7 +440,7 @@ export default function LeaderboardView({
       <div className="flex items-center justify-between text-xs text-slate-600 pt-1">
         <div className="flex items-center gap-2">
           <div className="font-extrabold uppercase tracking-wider text-slate-900">
-            {searchQuery
+            {appliedSearch
               ? 'Search Results'
               : isContestSection
               ? 'Other Standings (Rank #4+)'
@@ -383,7 +450,7 @@ export default function LeaderboardView({
               ? `Standings for ${selectedTestTitle}`
               : `Standings for ${selectedSetTitle}`}
           </div>
-          {!searchQuery && (
+          {!appliedSearch && (
             <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-200 text-xs font-bold px-2 py-0">
               {displayedTableList.length} in table
             </Badge>
@@ -397,15 +464,19 @@ export default function LeaderboardView({
       </div>
 
       {/* 5. Paginated Rankings Table */}
-      {!isContestSection && isCurrentPositionError ? (
+      {isTableError ? (
         <Card className="py-12 px-4 border-rose-200 bg-rose-50/40 shadow-none rounded-2xl text-center space-y-1">
-          <div className="text-sm font-bold text-rose-700">Failed to load standings</div>
-          <div className="text-xs text-rose-600">Please try refreshing or switching filters.</div>
+          <div className="text-sm font-bold text-rose-700">
+            {isSearching ? 'Failed to search standings' : 'Failed to load standings'}
+          </div>
+          <div className="text-xs text-rose-600">
+            Please try refreshing or adjusting your search filters.
+          </div>
         </Card>
       ) : (
         <LeaderboardTable
           rankings={displayedTableList}
-          isLoading={!isContestSection && (isCurrentPositionLoading || isCurrentPositionFetching)}
+          isLoading={isTableLoading}
           showTestColumn={!isContestSection && selectedTestId === 'all'}
           showTestSetColumn={!isContestSection && selectedSetId === 'all'}
         />
