@@ -7,6 +7,8 @@ import type {
     LeaderboardResponse,
     LeaderboardOptionsQuery,
     LeaderboardOptionResponse,
+    LeaderboardSearchQuery,
+    LeaderboardSearchResponse,
 } from "../types/leaderboard.types"
 
 export function useCurrentPositionsQueries(
@@ -40,6 +42,22 @@ export function useLeaderboardOptions(
         queryFn: () => leaderboardService.getLeaderboardOptions({ ...params, orgId }),
         select: (res): LeaderboardOptionResponse => res.data,
         enabled: options?.enabled ?? true,
+        placeholderData: keepPreviousData,
+        staleTime: 1000 * 60 * 2,
+    });
+}
+
+export function useLeaderboardSearch(
+    params: Omit<LeaderboardSearchQuery, 'orgId'>,
+    adminOrgId?: string,
+){
+    const { orgId } = useActiveOrgId(adminOrgId);
+    const trimmedKeyword = params.searchKeyword.trim();
+    return useQuery({
+        queryKey: leaderboardKeys.searchList({ ...params, orgId ,searchKeyword: trimmedKeyword}),
+        queryFn: () => leaderboardService.search({ ...params, orgId, searchKeyword: trimmedKeyword}),
+        select: (res): LeaderboardSearchResponse => res.data,
+        enabled: trimmedKeyword.length > 0,
         placeholderData: keepPreviousData,
         staleTime: 1000 * 60 * 2,
     });
