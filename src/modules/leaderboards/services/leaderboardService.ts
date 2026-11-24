@@ -1,6 +1,6 @@
 import { apiClient } from '@/lib/apiClient';
 import { LEADERBOARD_ENDPOINTS } from '../constants/endpoints';
-import { ApiResponse } from '@/types/api.types';
+import type { ApiResponse } from '@/types/api.types';
 import type {
     LeaderboardFilter,
     LeaderboardResponse,

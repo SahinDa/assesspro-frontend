@@ -39,6 +39,7 @@ export interface LeaderboardResponse {
 
 export interface LeaderboardOptionsQuery {
   orgId?: string;
+  test_id?:string;
   isTestset?: boolean;
 }
 
