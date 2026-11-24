@@ -15,6 +15,7 @@ export function useCurrentPositionsQueries(
         limit: 10,
     },
     adminOrgId?: string,
+    options?: { enabled?: boolean },
 ){
     const { orgId } = useActiveOrgId(adminOrgId);
 
@@ -22,6 +23,7 @@ export function useCurrentPositionsQueries(
         queryKey: leaderboardKeys.currentPositionList({ ...params, orgId }),
         queryFn: () => leaderboardService.getCurrentPosition({ ...params, orgId }),
         select: (res): LeaderboardResponse => res.data,
+        enabled: options?.enabled ?? true,
         placeholderData: keepPreviousData,
         staleTime: 1000 * 60 * 2,
     });
@@ -30,12 +32,14 @@ export function useCurrentPositionsQueries(
 export function useLeaderboardOptions(
     params: Omit<LeaderboardOptionsQuery, 'orgId'> = {},
     adminOrgId?: string,
+    options?: { enabled?: boolean },
 ){
     const { orgId } = useActiveOrgId(adminOrgId);
     return useQuery({
         queryKey: leaderboardKeys.leaderboardoptionList({ ...params, orgId }),
         queryFn: () => leaderboardService.getLeaderboardOptions({ ...params, orgId }),
         select: (res): LeaderboardOptionResponse => res.data,
+        enabled: options?.enabled ?? true,
         placeholderData: keepPreviousData,
         staleTime: 1000 * 60 * 2,
     });
