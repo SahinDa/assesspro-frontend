@@ -5,6 +5,8 @@ import { useActiveOrgId } from '@/hooks/useActiveOrgId';
 import type {
     LeaderboardFilter,
     LeaderboardResponse,
+    LeaderboardOptionsQuery,
+    LeaderboardOptionResponse,
 } from "../types/leaderboard.types"
 
 export function useCurrentPositionsQueries(
@@ -20,6 +22,20 @@ export function useCurrentPositionsQueries(
         queryKey: leaderboardKeys.currentPositionList({ ...params, orgId }),
         queryFn: () => leaderboardService.getCurrentPosition({ ...params, orgId }),
         select: (res): LeaderboardResponse => res.data,
+        placeholderData: keepPreviousData,
+        staleTime: 1000 * 60 * 2,
+    });
+}
+
+export function useLeaderboardOptions(
+    params: Omit<LeaderboardOptionsQuery, 'orgId'> = {},
+    adminOrgId?: string,
+){
+    const { orgId } = useActiveOrgId(adminOrgId);
+    return useQuery({
+        queryKey: leaderboardKeys.leaderboardoptionList({ ...params, orgId }),
+        queryFn: () => leaderboardService.getLeaderboardOptions({ ...params, orgId }),
+        select: (res): LeaderboardOptionResponse => res.data,
         placeholderData: keepPreviousData,
         staleTime: 1000 * 60 * 2,
     });
