@@ -36,3 +36,22 @@ export interface LeaderboardResponse {
   data: LeaderboardRow[],
   meta: MetaResponse,
 }
+
+export interface LeaderboardOptionsQuery {
+  orgId?: string;
+  isTestset?: boolean;
+}
+
+export interface LeaderboardOptionTestResponse {
+  test_id:string;
+  test_name:string;
+}
+
+export interface LeaderboardOptionTestsetResponse {
+  testset_id,
+  testset_name,
+}
+
+export type LeaderboardOptionResponse =
+ | LeaderboardOptionTestResponse []
+ | LeaderboardOptionTestsetResponse [];
