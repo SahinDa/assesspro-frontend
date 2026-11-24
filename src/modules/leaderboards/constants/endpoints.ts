@@ -1,4 +1,5 @@
 export const LEADERBOARD_ENDPOINTS = {
 GET_CURRENT_POSITION : '/leaderboard',
-GET_LEADERBOARD_OPTIONS :'/leaderboard/options'
+GET_LEADERBOARD_OPTIONS :'/leaderboard/options',
+SEARCH:'/leaderboard/search'
 }

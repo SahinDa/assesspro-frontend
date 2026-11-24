@@ -56,3 +56,9 @@ export interface LeaderboardOptionTestsetResponse {
 export type LeaderboardOptionResponse =
  | LeaderboardOptionTestResponse []
  | LeaderboardOptionTestsetResponse [];
+
+ export interface LeaderboardSearchQuery extends LeaderboardFilter {
+  searchKeyword: string;
+}
+
+export type LeaderboardSearchResponse = LeaderboardResponse;

@@ -1,11 +1,13 @@
 import { apiClient } from '@/lib/apiClient';
 import { LEADERBOARD_ENDPOINTS } from '../constants/endpoints';
-import type { ApiResponse } from '@/types/api.types';
+import { ApiResponse } from '@/types/api.types';
 import type {
     LeaderboardFilter,
     LeaderboardResponse,
     LeaderboardOptionsQuery,
     LeaderboardOptionResponse,
+    LeaderboardSearchQuery,
+    LeaderboardSearchResponse,
 } from "../types/leaderboard.types"
 
 
@@ -27,5 +29,11 @@ export const leaderboardService = {
         {params},
       )
       return res.data;
+    },
+    search: async(params?:LeaderboardSearchQuery):Promise<ApiResponse<LeaderboardSearchResponse>> =>{
+      const res = await apiClient.get<ApiResponse<LeaderboardSearchResponse>>(
+        LEADERBOARD_ENDPOINTS.SEARCH,
+        {params},
+      )
     }
 }
