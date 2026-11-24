@@ -26,30 +26,12 @@ import LeaderboardPodium from '../components/LeaderboardPodium'
 import LeaderboardTable from '../components/LeaderboardTable'
 import { type LeaderboardSection } from '../utils/leaderboardValidation'
 import { type LeaderboardRow } from '../types/leaderboard.types'
-import { useCurrentPositionsQueries } from '../api/useLeaderboardQueries'
+import { useCurrentPositionsQueries, useLeaderboardOptions } from '../api/useLeaderboardQueries'
 
 const MOCK_CONTESTS = [
   { id: 'c-101', title: 'National Coding Grand Prix 2026 - Phase 1 Assessment' },
   { id: 'c-102', title: 'Full Stack Engineering Hackathon Championship Finals' },
 ]
-
-// Tests list
-const MOCK_TESTS = [
-  { id: 't-101', title: 'Data Structures & Algorithms' },
-  { id: 't-102', title: 'System Architecture & Database Design' },
-]
-
-// Test Sets mapped to their parent Test
-const MOCK_TEST_SETS: Record<string, { id: string; title: string }[]> = {
-  't-101': [
-    { id: 'ts-101-1', title: 'Arrays & Dynamic Programming Track' },
-    { id: 'ts-101-2', title: 'Trees & Graph Traversal Track' },
-  ],
-  't-102': [
-    { id: 'ts-102-1', title: 'Distributed Systems & Microservices Track' },
-    { id: 'ts-102-2', title: 'SQL & Query Optimization Track' },
-  ],
-}
 
 const MOCK_CONTEST_DATA: Record<string, LeaderboardRow[]> = {
   'c-101': [
@@ -105,10 +87,47 @@ export default function LeaderboardView({
       offset: (currentPage - 1) * pageSize,
     },
     orgId,
+    { enabled: !isContestSection },
   )
 
+  // Fetch all Tests when on Current Position tab
+  const {
+    data: testOptionsResponse,
+    isLoading: isTestsLoading,
+  } = useLeaderboardOptions(
+    { isTestset: false },
+    orgId,
+    { enabled: !isContestSection },
+  )
+
+  // Fetch Test Sets only after a specific Test is selected
+  const {
+    data: testSetOptionsResponse,
+    isLoading: isTestSetsLoading,
+  } = useLeaderboardOptions(
+    { 
+      isTestset: true,
+      test_id:selectedTestId,
+    },
+    orgId,
+    { enabled: !isContestSection && selectedTestId !== 'all' },
+  )
+
+  // Determine available tests
+  const availableTests = useMemo(() => {
+    if (!testOptionsResponse) return []
+    return testOptionsResponse.flatMap((item) =>
+      'test_id' in item ? [{ id: item.test_id, title: item.test_name }] : [],
+    )
+  }, [testOptionsResponse])
+
   // Determine available child test sets
-  const availableTestSets = selectedTestId !== 'all' ? MOCK_TEST_SETS[selectedTestId] || [] : []
+  const availableTestSets = useMemo(() => {
+    if (selectedTestId === 'all' || !testSetOptionsResponse) return []
+    return testSetOptionsResponse.flatMap((item) =>
+      'testset_id' in item ? [{ id: item.testset_id, title: item.testset_name }] : [],
+    )
+  }, [selectedTestId, testSetOptionsResponse])
 
   // Resolve raw data list (mock for Contests, live API for Current Position)
   const rawList = useMemo(() => {
@@ -131,7 +150,7 @@ export default function LeaderboardView({
   const selectedTestTitle =
     selectedTestId === 'all'
       ? 'All Tests (Aggregated)'
-      : MOCK_TESTS.find((t) => t.id === selectedTestId)?.title || 'Select test'
+      : availableTests.find((t) => t.id === selectedTestId)?.title || 'Select test'
 
   const selectedSetTitle =
     selectedSetId === 'all'
@@ -254,6 +273,7 @@ export default function LeaderboardView({
                 <div className="flex-1 min-w-0">
                   <Select
                     value={selectedTestId}
+                    disabled={isTestsLoading}
                     onValueChange={(val) => {
                       setSelectedTestId(val ?? 'all')
                       setSelectedSetId('all')
@@ -264,8 +284,8 @@ export default function LeaderboardView({
                     <SelectTrigger className="h-10 w-full text-xs font-semibold rounded-xl border-slate-200 bg-slate-50/70 text-slate-900 hover:bg-slate-50 focus:ring-1 focus:ring-indigo-500 truncate">
                       <div className="flex items-center gap-1.5 truncate">
                         <FileText className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
-                        <SelectValue placeholder="Select test...">
-                          {selectedTestTitle}
+                        <SelectValue placeholder={isTestsLoading ? 'Loading tests...' : 'Select test...'}>
+                          {isTestsLoading ? 'Loading tests...' : selectedTestTitle}
                         </SelectValue>
                       </div>
                     </SelectTrigger>
@@ -273,7 +293,7 @@ export default function LeaderboardView({
                       <SelectItem value="all" className="text-xs py-2.5 cursor-pointer font-bold text-indigo-900">
                         All Tests (Overview)
                       </SelectItem>
-                      {MOCK_TESTS.map((t) => (
+                      {availableTests.map((t) => (
                         <SelectItem key={t.id} value={t.id} className="text-xs py-2.5 cursor-pointer font-medium">
                           {t.title}
                         </SelectItem>
@@ -287,6 +307,7 @@ export default function LeaderboardView({
                   <div className="flex-1 min-w-0">
                     <Select
                       value={selectedSetId}
+                      disabled={isTestSetsLoading}
                       onValueChange={(val) => {
                         setSelectedSetId(val ?? 'all')
                         setCurrentPage(1)
@@ -296,8 +317,8 @@ export default function LeaderboardView({
                       <SelectTrigger className="h-10 w-full text-xs font-semibold rounded-xl border-slate-200 bg-slate-50/70 text-slate-900 hover:bg-slate-50 focus:ring-1 focus:ring-indigo-500 truncate">
                         <div className="flex items-center gap-1.5 truncate">
                           <Layers className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                          <SelectValue placeholder="Select test set...">
-                            {selectedSetTitle}
+                          <SelectValue placeholder={isTestSetsLoading ? 'Loading test sets...' : 'Select test set...'}>
+                            {isTestSetsLoading ? 'Loading test sets...' : selectedSetTitle}
                           </SelectValue>
                         </div>
                       </SelectTrigger>
