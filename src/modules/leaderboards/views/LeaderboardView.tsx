@@ -8,7 +8,6 @@ import {
   Users,
   X,
   Sparkles,
-  Loader2,
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { UserRole, type UserRoleType } from '@/config/enums'
@@ -78,6 +77,7 @@ export default function LeaderboardView({
   const {
     data: currentPositionResponse,
     isLoading: isCurrentPositionLoading,
+    isFetching: isCurrentPositionFetching,
     isError: isCurrentPositionError,
   } = useCurrentPositionsQueries(
     {
@@ -105,9 +105,9 @@ export default function LeaderboardView({
     data: testSetOptionsResponse,
     isLoading: isTestSetsLoading,
   } = useLeaderboardOptions(
-    { 
+    {
       isTestset: true,
-      test_id:selectedTestId,
+      test_id: selectedTestId,
     },
     orgId,
     { enabled: !isContestSection && selectedTestId !== 'all' },
@@ -397,12 +397,7 @@ export default function LeaderboardView({
       </div>
 
       {/* 5. Paginated Rankings Table */}
-      {!isContestSection && isCurrentPositionLoading ? (
-        <Card className="py-12 px-4 border-slate-200 bg-white shadow-xs rounded-2xl flex flex-col items-center justify-center gap-2 text-slate-500">
-          <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
-          <div className="text-xs font-medium">Loading standings...</div>
-        </Card>
-      ) : !isContestSection && isCurrentPositionError ? (
+      {!isContestSection && isCurrentPositionError ? (
         <Card className="py-12 px-4 border-rose-200 bg-rose-50/40 shadow-none rounded-2xl text-center space-y-1">
           <div className="text-sm font-bold text-rose-700">Failed to load standings</div>
           <div className="text-xs text-rose-600">Please try refreshing or switching filters.</div>
@@ -410,6 +405,7 @@ export default function LeaderboardView({
       ) : (
         <LeaderboardTable
           rankings={displayedTableList}
+          isLoading={!isContestSection && (isCurrentPositionLoading || isCurrentPositionFetching)}
           showTestColumn={!isContestSection && selectedTestId === 'all'}
           showTestSetColumn={!isContestSection && selectedSetId === 'all'}
         />
