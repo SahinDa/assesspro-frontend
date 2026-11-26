@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Plus, Sparkles, Layers, ShieldCheck, AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
+import { Plus, Sparkles, Layers, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -12,11 +13,20 @@ import {
 import PlanCard from '../components/PlanCard'
 import PlanFormDialog from '../components/PlanFormDialog'
 import CheckoutDialog from '../components/CheckoutDialog'
+import { useOrganizationPlansQuery } from '../api/usePlanQueries'
+import { 
+  useCreateOrganizationPlan,
+  useUpdateOrganizationPlan,
+  useRemoveOrganizationPlan,
+ } from '../api/usePlanMutations'
+import type { 
+  CreateOrganizationPlanInput,
+  UpdateOrganizationPlanInput,
+ } from '../types/subscription.types'
 import {
   UserRole,
   type UserRoleType,
   MOCK_PLATFORM_PLANS,
-  MOCK_ORGANIZATION_PLANS,
   type PlatformPlanEntity,
   type OrganizationPlanEntity,
 } from '../utils/subscriptionValidation'
@@ -26,14 +36,22 @@ interface PlansViewProps {
   currentOrgId?: string | null
 }
 
-export default function PlansView({ 
+export default function PlansView({
   userRole = UserRole.ORGANIZATION,
-  currentOrgId = 'org-uuid-101'
+  currentOrgId,
 }: PlansViewProps) {
   // Plan state
   const [platformPlans, setPlatformPlans] = useState<PlatformPlanEntity[]>(MOCK_PLATFORM_PLANS)
-  const [orgPlans, setOrgPlans] = useState<OrganizationPlanEntity[]>(MOCK_ORGANIZATION_PLANS)
+  const {
+    data: orgPlans = [],
+    isLoading: isLoadingOrgPlans,
+    isError: isOrgPlansError,
+    error: orgPlansError,
+  } = useOrganizationPlansQuery(currentOrgId ?? undefined)
 
+  const createOrgPlanMutation = useCreateOrganizationPlan();
+  const updateOrgPlanMutation = useUpdateOrganizationPlan();
+  const removeOrgPlanMutation = useRemoveOrganizationPlan();
   // Plan creation / editing modal state
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<PlatformPlanEntity | OrganizationPlanEntity | null>(null)
@@ -70,7 +88,17 @@ export default function PlansView({
     if (userRole === UserRole.ADMIN) {
       setPlatformPlans((prev) => prev.filter((p) => p.plan_id !== planId))
     } else {
-      setOrgPlans((prev) => prev.filter((p) => p.plan_id !== planId))
+      removeOrgPlanMutation.mutate(
+        { planId },
+        {
+          onSuccess: (res) => {
+            toast.success(res.data?.message || res.message || 'Student plan removed successfully')
+          },
+          onError: (err) => {
+            toast.error(err.message || 'Failed to remove student plan')
+          },
+        }
+      )
     }
   }
 
@@ -98,20 +126,50 @@ export default function PlansView({
       }
     } else {
       if (editingPlan) {
-        setOrgPlans((prev) =>
-          prev.map((p) => (p.plan_id === editingPlan.plan_id ? { ...p, ...formData } : p))
+        const input: UpdateOrganizationPlanInput = {
+          name: formData.name,
+          description: formData.description || undefined,
+          pricing: formData.pricing,
+          currency: formData.currency,
+          features: formData.features,
+        }
+
+        updateOrgPlanMutation.mutate(
+          {
+            params: { planId: editingPlan.plan_id },
+            input,
+          },
+          {
+            onSuccess: (res) => {
+              toast.success(res.message || 'Student plan updated successfully')
+              setEditingPlan(null)
+              setIsFormOpen(false)
+            },
+            onError: (err) => {
+              toast.error(err.message || 'Failed to update student plan')
+            },
+          }
         )
       } else {
-        const newPlan: OrganizationPlanEntity = {
-          plan_id: `org-plan-${Date.now()}`,
-          organization_id: currentOrgId || 'org-uuid-101',
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          ...formData,
+        const payload: CreateOrganizationPlanInput = {
+          name: formData.name,
+          description: formData.description || undefined,
+          pricing: formData.pricing,
+          currency: formData.currency,
+          features: formData.features,
         }
-        setOrgPlans((prev) => [...prev, newPlan])
+  
+        createOrgPlanMutation.mutate(payload, {
+          onSuccess: (res) => {
+            toast.success(res.message || 'Student plan created successfully')
+            setIsFormOpen(false)
+          },
+          onError: (err) => {
+            toast.error(err.message || 'Failed to create student plan')
+          },
+        })
       }
+
     }
   }
 
@@ -147,15 +205,15 @@ export default function PlansView({
                 {userRole === UserRole.ADMIN
                   ? 'Subscription Architecture'
                   : userRole === UserRole.ORGANIZATION
-                  ? 'Plans & Student Monetization'
-                  : 'Access Passes & Subscriptions'}
+                    ? 'Plans & Student Monetization'
+                    : 'Access Passes & Subscriptions'}
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 leading-relaxed">
                 {userRole === UserRole.ADMIN
                   ? 'Manage global B2B subscription tiers, set resource allocations, and define standard feature quotas.'
                   : userRole === UserRole.ORGANIZATION
-                  ? 'Scale your academy testing capacity and configure customizable access tiers for enrolled students.'
-                  : 'Unlock verified mock tests, unlimited drill reattempts, and comprehensive analytics.'}
+                    ? 'Scale your academy testing capacity and configure customizable access tiers for enrolled students.'
+                    : 'Unlock verified mock tests, unlimited drill reattempts, and comprehensive analytics.'}
               </p>
             </div>
 
@@ -170,8 +228,8 @@ export default function PlansView({
                           ? 'text-amber-600'
                           : 'text-indigo-600'
                         : isOrgLimitReached
-                        ? 'text-amber-600'
-                        : 'text-indigo-600'
+                          ? 'text-amber-600'
+                          : 'text-indigo-600'
                     }
                   >
                     {userRole === UserRole.ADMIN ? activePlatformPlansCount : activeOrgPlansCount}
@@ -243,7 +301,7 @@ export default function PlansView({
 
             <Button
               onClick={handleCreatePlan}
-              disabled={isOrgLimitReached}
+              disabled={isOrgLimitReached || createOrgPlanMutation.isPending}
               size="sm"
               className="rounded-xl text-xs font-bold h-9 bg-indigo-600 hover:bg-indigo-700 text-white gap-2 shadow-xs shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -283,7 +341,17 @@ export default function PlansView({
               </div>
             )}
 
-            {orgPlans.length === 0 ? (
+            {isLoadingOrgPlans ? (
+              <div className="flex items-center justify-center py-16 text-xs text-muted-foreground gap-2">
+                <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
+                <span>Loading student plans...</span>
+              </div>
+            ) : isOrgPlansError ? (
+              <div className="flex items-center gap-2 p-4 bg-destructive/10 border border-destructive/20 rounded-2xl text-destructive text-xs">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{orgPlansError?.message || 'Failed to load student plans.'}</span>
+              </div>
+            ) : orgPlans.length === 0 ? (
               <div className="text-center py-16 border border-dashed rounded-2xl border-border/80">
                 <p className="text-sm font-semibold text-muted-foreground">No student plans created yet.</p>
                 <Button
@@ -299,7 +367,7 @@ export default function PlansView({
                 {orgPlans.map((plan) => (
                   <PlanCard
                     key={plan.plan_id}
-                    plan={plan}
+                    plan={plan as OrganizationPlanEntity}
                     isPlatformPlan={false}
                     userRole={userRole}
                     currentOrgId={currentOrgId}
@@ -315,18 +383,34 @@ export default function PlansView({
 
       {/* 3. Student View */}
       {userRole === UserRole.STUDENT && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {orgPlans.map((plan) => (
-            <PlanCard
-              key={plan.plan_id}
-              plan={plan}
-              isPlatformPlan={false}
-              userRole={userRole}
-              currentOrgId={currentOrgId}
-              onSelectPlan={handleSelectPlan}
-            />
-          ))}
-        </div>
+        <>
+          {isLoadingOrgPlans ? (
+            <div className="flex items-center justify-center py-16 text-xs text-muted-foreground gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
+              <span>Loading available plans...</span>
+            </div>
+          ) : isOrgPlansError ? (
+            <div className="flex items-center gap-2 p-4 bg-destructive/10 border border-destructive/20 rounded-2xl text-destructive text-xs">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{orgPlansError?.message || 'Unable to load plans right now.'}</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {orgPlans
+                .filter((plan) => plan.is_active)
+                .map((plan) => (
+                  <PlanCard
+                    key={plan.plan_id}
+                    plan={plan as OrganizationPlanEntity}
+                    isPlatformPlan={false}
+                    userRole={userRole}
+                    currentOrgId={currentOrgId}
+                    onSelectPlan={handleSelectPlan}
+                  />
+                ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Dialogs */}
