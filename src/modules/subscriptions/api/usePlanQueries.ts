@@ -20,10 +20,9 @@ import {
   
     return useQuery({
       queryKey: planKeys.organizationList(orgId),
-      queryFn: () => planService.getAllOrganizationPlans(),
+      queryFn: () => planService.getAllOrganizationPlans({orgId}),
       select: (res): OrganizationPlanResponse[] => res.data,
       placeholderData: keepPreviousData,
-      enabled: Boolean(orgId),
       staleTime: 1000 * 60 * 2, // 2 minutes
     });
   }
@@ -37,67 +36,10 @@ import {
   
     return useQuery({
       queryKey: planKeys.organizationDetail(params.planId, orgId),
-      queryFn: () => planService.getOrganizationPlanById(params),
+      queryFn: () => planService.getOrganizationPlanById(params,{orgId}),
       select: (res): OrganizationPlanResponse => res.data,
       enabled: Boolean(params.planId),
       staleTime: 1000 * 60 * 2,
     });
   }
   
-  // 3. Create organization plan (Organization role)
-  export function useCreateOrganizationPlanMutation(adminOrgId?: string) {
-    const queryClient = useQueryClient();
-    const { orgId } = useActiveOrgId(adminOrgId);
-  
-    return useMutation({
-      mutationFn: (input: CreateOrganizationPlanInput) =>
-        planService.createOrganizationPlan({
-          ...input,
-          organization_id: input.organization_id ?? orgId,
-        }),
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: planKeys.organizationLists(),
-        });
-      },
-    });
-  }
-  
-  // 4. Update organization plan (Organization role)
-  export function useUpdateOrganizationPlanMutation() {
-    const queryClient = useQueryClient();
-  
-    return useMutation({
-      mutationFn: ({
-        params,
-        input,
-      }: {
-        params: OrganizationPlanParams;
-        input: UpdateOrganizationPlanInput;
-      }) => planService.updateOrganizationPlan(params, input),
-      onSuccess: (_res, variables) => {
-        queryClient.invalidateQueries({
-          queryKey: planKeys.organizationLists(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: planKeys.organizationDetails(),
-          predicate: (query) => query.queryKey[3] === variables.params.planId,
-        });
-      },
-    });
-  }
-  
-  // 5. Soft-remove organization plan (Organization role)
-  export function useRemoveOrganizationPlanMutation() {
-    const queryClient = useQueryClient();
-  
-    return useMutation({
-      mutationFn: (params: OrganizationPlanParams) =>
-        planService.removeOrganizationPlan(params),
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: planKeys.organizationLists(),
-        });
-      },
-    });
-  }

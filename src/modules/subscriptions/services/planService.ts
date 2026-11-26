@@ -3,6 +3,7 @@ import { SUBSCRIPTION_ENDPOINTS } from '../constants/endpoints';
 import type { ApiResponse } from '@/types/api.types';
 import type {
   CreateOrganizationPlanInput,
+  OrganizationPlanQuery,
   OrganizationPlanParams,
   OrganizationPlanResponse,
   RemoveOrganizationPlanResponse,
@@ -20,20 +21,23 @@ export const planService = {
     return res.data;
   },
 
-  getAllOrganizationPlans: async (): Promise<
+  getAllOrganizationPlans: async (params?:OrganizationPlanQuery ): Promise<
     ApiResponse<OrganizationPlanResponse[]>
   > => {
     const res = await apiClient.get<ApiResponse<OrganizationPlanResponse[]>>(
       SUBSCRIPTION_ENDPOINTS.GET_ALL_ORGANIZATION_PLANS,
+     {params}
     );
     return res.data;
   },
 
   getOrganizationPlanById: async (
     params: OrganizationPlanParams,
+    query?:OrganizationPlanQuery ,
   ): Promise<ApiResponse<OrganizationPlanResponse>> => {
     const res = await apiClient.get<ApiResponse<OrganizationPlanResponse>>(
       SUBSCRIPTION_ENDPOINTS.GET_ORGANIZATION_PLAN_BY_ID(params.planId),
+      {params:query}
     );
     return res.data;
   },

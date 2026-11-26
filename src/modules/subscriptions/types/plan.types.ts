@@ -38,6 +38,9 @@ import {
     planId: string;
   }
   
+  export interface OrganizationPlanQuery {
+    orgId?: string;
+  }
   export interface UpdateOrganizationPlanInput {
     name?: string;
     description?: string;
