@@ -47,11 +47,9 @@ export default function PlanCard({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const currentPrice = plan.pricing[selectedCycle] ?? 0
 
-  const canEdit =
+   const canEdit =
     (userRole === UserRole.ADMIN && isPlatformPlan) ||
-    (userRole === UserRole.ORGANIZATION &&
-      !isPlatformPlan &&
-      (plan as OrganizationPlanEntity).organization_id === currentOrgId)
+    (userRole === UserRole.ORGANIZATION && !isPlatformPlan);
 
 const handleConfirmDelete = () => {
   onDeletePlan?.(plan.plan_id)
