@@ -394,6 +394,16 @@ export default function PlansView({
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{orgPlansError?.message || 'Unable to load plans right now.'}</span>
             </div>
+          ) : orgPlans.filter((plan) => plan.is_active).length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center py-16 px-4 border border-dashed rounded-2xl border-border/80 bg-muted/20">
+              <Sparkles className="h-6 w-6 text-muted-foreground/70 mb-2" />
+              <p className="text-sm font-semibold text-foreground">
+                No subscription plans available yet
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-md">
+                Your organization hasn&apos;t published any active plans right now. Please check back later or contact your institute administrator.
+              </p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {orgPlans
