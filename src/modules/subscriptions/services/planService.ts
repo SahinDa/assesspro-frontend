@@ -9,7 +9,7 @@ import type {
   UpdateOrganizationPlanInput,
 } from '../types/subscription.types';
 
-export const subscriptionService = {
+export const planService = {
   createOrganizationPlan: async (
     input: CreateOrganizationPlanInput,
   ): Promise<ApiResponse<OrganizationPlanResponse>> => {
